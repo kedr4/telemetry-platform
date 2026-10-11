@@ -1,2 +1,7 @@
 <Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Telemetry.BuildingBlocks/Telemetry.BuildingBlocks.csproj" />
+    <Project Path="src/BuildingBlocks/Telemetry.Contracts/Telemetry.Contracts.csproj" />
+  </Folder>
 </Solution>

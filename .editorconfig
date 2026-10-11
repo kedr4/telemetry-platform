@@ -65,6 +65,10 @@ dotnet_diagnostic.SA1600.severity = none
 dotnet_diagnostic.SA1601.severity = none
 dotnet_diagnostic.SA1602.severity = none
 dotnet_diagnostic.SA1633.severity = none
+# A <summary> alone is acceptable; parameters/returns need not be documented separately.
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1615.severity = none
+dotnet_diagnostic.SA1618.severity = none
 dotnet_diagnostic.CS1591.severity = none
 # Underscore-prefixed private fields instead of this. qualification.
 dotnet_diagnostic.SA1101.severity = none
