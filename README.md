@@ -22,11 +22,24 @@ docker compose up --build -d
 
 Ports and credentials can be overridden through a `.env` file — see [.env.example](.env.example).
 
+## Development
+
+Requirements: .NET 10 SDK, Docker (integration tests start containers through Testcontainers).
+
+```bash
+cd backend
+dotnet build Telemetry.slnx                              # warnings are errors
+dotnet test --solution Telemetry.slnx                    # unit + integration tests
+dotnet format Telemetry.slnx --verify-no-changes         # style check
+```
+
 ## Repository layout
 
 | Path | Contents |
 |---|---|
-| `backend/` | .NET 10 solution (`Telemetry.slnx`): microservices, shared building blocks, tests |
+| `backend/src/BuildingBlocks/` | Message contracts and shared infrastructure (logging, correlation, health, RabbitMQ) |
+| `backend/src/Services/` | One folder per microservice |
+| `backend/tests/` | Unit and integration tests, mirroring `src/` |
 | `frontend/` | Angular single-page application |
 | `infra/` | Infrastructure configuration (Prometheus, Grafana, …) |
 | `docs/` | Architecture notes, implementation plan, API analysis |
