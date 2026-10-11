@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Telemetry.Contracts.Readings;
 
 /// <summary>Air quality reading.</summary>
@@ -7,5 +9,6 @@ namespace Telemetry.Contracts.Readings;
 /// <param name="Humidity">Relative humidity (%).</param>
 public sealed record AirQualityReading(string Location, int Co2, int Pm25, int Humidity) : MeterReading(Location)
 {
+    [JsonIgnore]
     public override MeterType Type => MeterType.AirQuality;
 }

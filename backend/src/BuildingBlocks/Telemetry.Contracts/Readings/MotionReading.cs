@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Telemetry.Contracts.Readings;
 
 /// <summary>Motion sensor reading.</summary>
@@ -5,5 +7,6 @@ namespace Telemetry.Contracts.Readings;
 /// <param name="MotionDetected">Whether motion was detected.</param>
 public sealed record MotionReading(string Location, bool MotionDetected) : MeterReading(Location)
 {
+    [JsonIgnore]
     public override MeterType Type => MeterType.Motion;
 }
