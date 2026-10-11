@@ -4,4 +4,8 @@
     <Project Path="src/BuildingBlocks/Telemetry.BuildingBlocks/Telemetry.BuildingBlocks.csproj" />
     <Project Path="src/BuildingBlocks/Telemetry.Contracts/Telemetry.Contracts.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/BuildingBlocks/">
+    <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.UnitTests/Telemetry.BuildingBlocks.UnitTests.csproj" />
+  </Folder>
 </Solution>
