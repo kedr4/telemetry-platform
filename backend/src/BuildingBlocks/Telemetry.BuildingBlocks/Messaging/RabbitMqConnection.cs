@@ -9,6 +9,8 @@ namespace Telemetry.BuildingBlocks.Messaging;
 
 internal sealed partial class RabbitMqConnection : IRabbitMqConnection, IAsyncDisposable
 {
+    private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(5);
+
     private readonly RabbitMqOptions _options;
     private readonly string _clientName;
     private readonly ILogger<RabbitMqConnection> _logger;
@@ -69,7 +71,19 @@ internal sealed partial class RabbitMqConnection : IRabbitMqConnection, IAsyncDi
     {
         if (_connection is not null)
         {
-            await _connection.CloseAsync();
+            try
+            {
+                await _connection.CloseAsync(
+                    Constants.ReplySuccess,
+                    "Service shutting down",
+                    CloseTimeout,
+                    abort: false);
+            }
+            catch (Exception ex)
+            {
+                LogCloseFailed(ex);
+            }
+
             await _connection.DisposeAsync();
         }
 
@@ -105,4 +119,7 @@ internal sealed partial class RabbitMqConnection : IRabbitMqConnection, IAsyncDi
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to RabbitMQ at {Host}:{Port}")]
     private partial void LogConnected(string host, int port);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Closing the RabbitMQ connection failed")]
+    private partial void LogCloseFailed(Exception exception);
 }
