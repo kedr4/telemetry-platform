@@ -4,10 +4,18 @@
     <Project Path="src/BuildingBlocks/Telemetry.BuildingBlocks/Telemetry.BuildingBlocks.csproj" />
     <Project Path="src/BuildingBlocks/Telemetry.Contracts/Telemetry.Contracts.csproj" />
   </Folder>
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Ingestor/">
+    <Project Path="src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj" />
+  </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/BuildingBlocks/">
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.IntegrationTests/Telemetry.BuildingBlocks.IntegrationTests.csproj" />
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.UnitTests/Telemetry.BuildingBlocks.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/" />
+  <Folder Name="/tests/Services/Ingestor/">
+    <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.UnitTests/Telemetry.Ingestor.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Shared/">
     <Project Path="tests/Shared/Telemetry.Testing/Telemetry.Testing.csproj" />
