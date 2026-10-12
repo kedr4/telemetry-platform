@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="WireMock.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Ingestor\Telemetry.Ingestor\Telemetry.Ingestor.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Telemetry.Testing\Telemetry.Testing.csproj" />
+  </ItemGroup>
+
+</Project>
