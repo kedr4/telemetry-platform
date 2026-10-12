@@ -19,6 +19,9 @@ public abstract record FetchResult
     /// <summary>The API rejected the request because of its rate limit.</summary>
     public sealed record RateLimited(TimeSpan? RetryAfter) : FetchResult;
 
+    /// <summary>The client-side rate limit is exhausted; the API was not called.</summary>
+    public sealed record Throttled(TimeSpan? RetryAfter) : FetchResult;
+
     /// <summary>The circuit breaker is open; the API is not called until it closes.</summary>
     public sealed record CircuitOpen(TimeSpan? RetryAfter) : FetchResult;
 

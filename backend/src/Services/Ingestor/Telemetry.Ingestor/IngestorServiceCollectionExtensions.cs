@@ -47,8 +47,10 @@ public static class IngestorServiceCollectionExtensions
             .ValidateOnStart();
 
         services.TryAddSingleton(TimeProvider.System);
+        services.AddTransient<ResponseBufferingHandler>();
+        services.AddSingleton<WeakApiRateLimiter>();
 
-        services.AddHttpClient<IWeakApiClient, WeakApiClient>((provider, client) =>
+        var httpClient = services.AddHttpClient<IWeakApiClient, WeakApiClient>((provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<WeakApiOptions>>().Value;
                 client.BaseAddress = options.BaseUrl;
@@ -56,13 +58,18 @@ public static class IngestorServiceCollectionExtensions
 
                 // Timeouts are enforced by the resilience pipeline; this is only a safety net.
                 client.Timeout = options.TotalTimeout + TimeSpan.FromSeconds(5);
-            })
-            .AddResilienceHandler(WeakApiResilience.PipelineName, (pipeline, context) =>
+            });
+
+        httpClient.AddResilienceHandler(WeakApiResilience.PipelineName, (pipeline, context) =>
             {
                 var options = context.ServiceProvider.GetRequiredService<IOptions<WeakApiOptions>>().Value;
                 var logger = context.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<WeakApiClient>();
-                WeakApiResilience.Configure(pipeline, options, logger);
+                var rateLimiter = context.ServiceProvider.GetRequiredService<WeakApiRateLimiter>().Limiter;
+                WeakApiResilience.Configure(pipeline, options, rateLimiter, logger);
             });
+
+        // Added after the resilience handler, so it runs inside every attempt.
+        httpClient.AddHttpMessageHandler<ResponseBufferingHandler>();
 
         return services;
     }

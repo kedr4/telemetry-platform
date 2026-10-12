@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Polly.CircuitBreaker;
+using Polly.RateLimiting;
 using Polly.Timeout;
 
 namespace Telemetry.Ingestor.WeakApi;
@@ -37,6 +38,10 @@ internal sealed class WeakApiClient(HttpClient httpClient, TimeProvider timeProv
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             return Parse(body);
         }
+        catch (RateLimiterRejectedException ex)
+        {
+            return new FetchResult.Throttled(ex.RetryAfter);
+        }
         catch (BrokenCircuitException ex)
         {
             return new FetchResult.CircuitOpen(ex.RetryAfter);
@@ -45,7 +50,7 @@ internal sealed class WeakApiClient(HttpClient httpClient, TimeProvider timeProv
         {
             return new FetchResult.Failed("The request timed out.");
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
         {
             return new FetchResult.Failed($"Transport error: {ex.Message}");
         }

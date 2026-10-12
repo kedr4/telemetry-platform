@@ -26,6 +26,9 @@ public sealed class WeakApiOptions : IValidatableObject
     [Required]
     public CircuitBreakerOptions CircuitBreaker { get; set; } = new();
 
+    [Required]
+    public RateLimitOptions RateLimit { get; set; } = new();
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (AttemptTimeout <= TimeSpan.Zero || TotalTimeout <= TimeSpan.Zero)
@@ -55,5 +58,17 @@ public sealed class WeakApiOptions : IValidatableObject
         public TimeSpan SamplingDuration { get; set; } = TimeSpan.FromMinutes(1);
 
         public TimeSpan BreakDuration { get; set; } = TimeSpan.FromSeconds(20);
+    }
+
+    /// <summary>
+    /// Client-side sliding-window limit that keeps requests below WeakApp's own limit
+    /// (measured: 10 requests per 40 s). A <see cref="PermitLimit"/> of 0 disables it.
+    /// </summary>
+    public sealed class RateLimitOptions
+    {
+        [Range(0, 10_000)]
+        public int PermitLimit { get; set; } = 9;
+
+        public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(40);
     }
 }

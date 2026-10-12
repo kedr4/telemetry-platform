@@ -45,6 +45,7 @@ public sealed class BatchIngestionServiceTests : IDisposable
         { new FetchResult.Corrupted("data corrupted"), IngestionOutcome.Corrupted, null },
         { new FetchResult.Failed("HTTP 502"), IngestionOutcome.FetchFailed, null },
         { new FetchResult.RateLimited(TimeSpan.FromSeconds(23)), IngestionOutcome.RateLimited, TimeSpan.FromSeconds(23) },
+        { new FetchResult.Throttled(TimeSpan.FromSeconds(4)), IngestionOutcome.Throttled, TimeSpan.FromSeconds(4) },
         { new FetchResult.CircuitOpen(TimeSpan.FromSeconds(10)), IngestionOutcome.CircuitOpen, TimeSpan.FromSeconds(10) },
     };
 

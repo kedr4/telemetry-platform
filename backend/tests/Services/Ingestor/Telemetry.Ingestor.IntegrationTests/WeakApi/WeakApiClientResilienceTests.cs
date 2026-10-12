@@ -69,6 +69,29 @@ public sealed class WeakApiClientResilienceTests : IDisposable
     }
 
     [Fact]
+    public async Task TruncatedBody_IsRetried()
+    {
+        // WeakApp's "data corrupted" answer is a 200 whose chunked body is aborted mid-stream.
+        var handler = new TruncatingHandler(truncatedResponses: 1);
+
+        var result = await CreateClient(primaryHandler: handler).GetMetersAsync(CancellationToken);
+
+        result.ShouldBeOfType<FetchResult.Success>().Meters.Count.ShouldBe(4);
+        handler.Requests.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task PersistentlyTruncatedBody_FailsAfterRetries()
+    {
+        var handler = new TruncatingHandler(truncatedResponses: int.MaxValue);
+
+        var result = await CreateClient(primaryHandler: handler).GetMetersAsync(CancellationToken);
+
+        result.ShouldBeOfType<FetchResult.Failed>().Reason.ShouldStartWith("Transport error");
+        handler.Requests.ShouldBe(3);
+    }
+
+    [Fact]
     public async Task RateLimit_IsNotRetried_AndReportsRetryAfter()
     {
         _api.Always(FakeWeakApp.RateLimited(retryAfterSeconds: 23));
@@ -77,6 +100,20 @@ public sealed class WeakApiClientResilienceTests : IDisposable
 
         result.ShouldBe(new FetchResult.RateLimited(TimeSpan.FromSeconds(23)));
         _api.MeterRequests.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ClientSideRateLimit_HoldsRequestsBack_WithoutCallingTheApi()
+    {
+        _api.Always(FakeWeakApp.Ok());
+        var client = CreateClient(permitLimit: 2);
+
+        (await client.GetMetersAsync(CancellationToken)).ShouldBeOfType<FetchResult.Success>();
+        (await client.GetMetersAsync(CancellationToken)).ShouldBeOfType<FetchResult.Success>();
+        var third = await client.GetMetersAsync(CancellationToken);
+
+        third.ShouldBeOfType<FetchResult.Throttled>();
+        _api.MeterRequests.ShouldBe(2);
     }
 
     [Fact]
@@ -120,7 +157,9 @@ public sealed class WeakApiClientResilienceTests : IDisposable
         string apiKey = FakeWeakApp.ApiKey,
         int retries = 2,
         int circuitMinimumThroughput = 100,
-        TimeSpan? attemptTimeout = null)
+        TimeSpan? attemptTimeout = null,
+        HttpMessageHandler? primaryHandler = null,
+        int permitLimit = 1_000)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -135,13 +174,22 @@ public sealed class WeakApiClientResilienceTests : IDisposable
                 ["WeakApi:CircuitBreaker:MinimumThroughput"] = circuitMinimumThroughput.ToString(CultureInfo.InvariantCulture),
                 ["WeakApi:CircuitBreaker:SamplingDuration"] = "00:00:30",
                 ["WeakApi:CircuitBreaker:BreakDuration"] = "00:00:30",
+                ["WeakApi:RateLimit:PermitLimit"] = permitLimit.ToString(CultureInfo.InvariantCulture),
+                ["WeakApi:RateLimit:Window"] = "00:01:00",
             })
             .Build();
 
-        _provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
-            .AddWeakApiClient(configuration)
-            .BuildServiceProvider();
+            .AddWeakApiClient(configuration);
+
+        if (primaryHandler is not null)
+        {
+            services.AddHttpClient<IWeakApiClient, WeakApiClient>()
+                .ConfigurePrimaryHttpMessageHandler(() => primaryHandler);
+        }
+
+        _provider = services.BuildServiceProvider();
 
         return _provider.GetRequiredService<IWeakApiClient>();
     }

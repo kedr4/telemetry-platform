@@ -7,7 +7,7 @@ public sealed class IngestionOptions : IValidatableObject
     public const string SectionName = "Ingestion";
 
     /// <summary>Gets or sets the delay between two ingestion cycles.</summary>
-    public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(6);
 
     /// <summary>Gets or sets the upper bound for a back-off requested by the API (Retry-After).</summary>
     public TimeSpan MaxBackoff { get; set; } = TimeSpan.FromMinutes(1);

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Threading.RateLimiting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.Timeout;
@@ -7,8 +8,9 @@ namespace Telemetry.Ingestor.WeakApi;
 
 /// <summary>
 /// HTTP resilience pipeline for the upstream API, from the outside in:
-/// total timeout → retry (exponential back-off with jitter) → circuit breaker → per-attempt timeout.
-/// Only transient failures (5xx, 408, timeouts, transport errors) are retried or counted by the breaker.
+/// total timeout → retry (exponential back-off with jitter) → circuit breaker → rate limiter → per-attempt timeout.
+/// The rate limiter sits inside the retry so that every real HTTP attempt consumes a permit.
+/// Only transient failures (5xx, 408, timeouts, transport errors, truncated bodies) are retried or counted by the breaker.
 /// 429 is deliberately excluded: retrying immediately would only extend the rate-limit window, so the
 /// ingestion loop backs off for the advertised <c>Retry-After</c> instead.
 /// </summary>
@@ -19,6 +21,7 @@ internal static partial class WeakApiResilience
     public static void Configure(
         ResiliencePipelineBuilder<HttpResponseMessage> pipeline,
         WeakApiOptions options,
+        RateLimiter? rateLimiter,
         ILogger logger)
     {
         pipeline
@@ -55,13 +58,19 @@ internal static partial class WeakApiResilience
                     LogCircuitClosed(logger);
                     return ValueTask.CompletedTask;
                 },
-            })
-            .AddTimeout(options.AttemptTimeout);
+            });
+
+        if (rateLimiter is not null)
+        {
+            pipeline.AddRateLimiter(rateLimiter);
+        }
+
+        pipeline.AddTimeout(options.AttemptTimeout);
     }
 
     internal static bool IsTransientFailure(Outcome<HttpResponseMessage> outcome) => outcome switch
     {
-        { Exception: HttpRequestException or TimeoutRejectedException } => true,
+        { Exception: HttpRequestException or IOException or TimeoutRejectedException } => true,
         { Result.StatusCode: HttpStatusCode.RequestTimeout } => true,
         { Result.StatusCode: var status } when (int)status >= 500 => true,
         _ => false,

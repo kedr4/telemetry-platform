@@ -27,7 +27,11 @@ internal sealed partial class BatchIngestionService(
         {
             FetchResult.Success success => await PublishAsync(success.Meters, cancellationToken),
             FetchResult.Corrupted corrupted => Skipped(IngestionOutcome.Corrupted, corrupted.Reason),
-            FetchResult.RateLimited limited => Skipped(IngestionOutcome.RateLimited, "Rate limit exceeded.", limited.RetryAfter),
+            FetchResult.Throttled throttled => Throttled(throttled.RetryAfter),
+            FetchResult.RateLimited limited => Skipped(
+                IngestionOutcome.RateLimited,
+                $"WeakApp rate limit exceeded; retry after {limited.RetryAfter?.ToString() ?? "unspecified"}.",
+                limited.RetryAfter),
             FetchResult.CircuitOpen open => Skipped(IngestionOutcome.CircuitOpen, "Circuit breaker is open.", open.RetryAfter),
             FetchResult.Failed failed => Skipped(IngestionOutcome.FetchFailed, failed.Reason),
             _ => throw new InvalidOperationException($"Unhandled fetch result {fetch.GetType().Name}."),
@@ -102,6 +106,13 @@ internal sealed partial class BatchIngestionService(
         return readings;
     }
 
+    // Expected while the client-side limiter is exhausted, so not a warning.
+    private IngestionResult Throttled(TimeSpan? retryAfter)
+    {
+        LogThrottled(retryAfter);
+        return new IngestionResult(IngestionOutcome.Throttled, RetryAfter: retryAfter);
+    }
+
     private IngestionResult Skipped(IngestionOutcome outcome, string reason, TimeSpan? retryAfter = null)
     {
         LogSkipped(outcome, reason);
@@ -113,6 +124,9 @@ internal sealed partial class BatchIngestionService(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Ingestion cycle skipped: {Outcome}. {Reason}")]
     private partial void LogSkipped(IngestionOutcome outcome, string reason);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Ingestion cycle throttled by the client-side rate limit; retry after {RetryAfter}")]
+    private partial void LogThrottled(TimeSpan? retryAfter);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reading rejected: {Reason}")]
     private partial void LogRejected(string reason);

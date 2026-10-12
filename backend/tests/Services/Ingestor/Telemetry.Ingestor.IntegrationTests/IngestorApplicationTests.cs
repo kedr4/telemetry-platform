@@ -62,6 +62,7 @@ public sealed class IngestorApplicationTests(RabbitMqFixture rabbit) : IDisposab
             .UseSetting("WeakApi:BaseUrl", _api.BaseUrl.ToString())
             .UseSetting("WeakApi:ApiKey", FakeWeakApp.ApiKey)
             .UseSetting("WeakApi:RetryBaseDelay", "00:00:00.010")
+            .UseSetting("WeakApi:RateLimit:PermitLimit", "0")
             .UseSetting("Ingestion:PollInterval", "00:00:00.200")
             .UseSetting("RabbitMq:HostName", rabbit.HostName)
             .UseSetting("RabbitMq:Port", rabbit.Port.ToString(CultureInfo.InvariantCulture))

@@ -14,6 +14,9 @@ public enum IngestionOutcome
     /// <summary>The API returned meters, but none passed validation.</summary>
     Invalid,
 
+    /// <summary>The client-side rate limit held the request back; the API was not called.</summary>
+    Throttled,
+
     /// <summary>The API rate limit was hit.</summary>
     RateLimited,
 
