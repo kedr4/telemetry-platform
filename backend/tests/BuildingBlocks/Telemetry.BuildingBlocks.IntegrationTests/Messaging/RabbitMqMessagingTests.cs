@@ -5,6 +5,8 @@ using Telemetry.BuildingBlocks.IntegrationTests.Infrastructure;
 using Telemetry.BuildingBlocks.Messaging;
 using Telemetry.Contracts.Messaging;
 using Telemetry.Contracts.Readings;
+using Telemetry.Testing;
+using Telemetry.Testing.RabbitMq;
 
 namespace Telemetry.BuildingBlocks.IntegrationTests.Messaging;
 

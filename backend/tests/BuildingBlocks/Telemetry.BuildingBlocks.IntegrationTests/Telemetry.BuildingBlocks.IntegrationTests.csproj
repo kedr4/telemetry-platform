@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Testcontainers.RabbitMq" />
+    <ProjectReference Include="..\..\Shared\Telemetry.Testing\Telemetry.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

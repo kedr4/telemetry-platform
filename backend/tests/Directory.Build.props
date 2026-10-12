@@ -2,13 +2,17 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <PropertyGroup>
-    <IsTestProject>true</IsTestProject>
-    <OutputType>Exe</OutputType>
+    <!-- Projects named *Tests are test executables; anything else under tests/ is a support library. -->
+    <IsTestProject>$(MSBuildProjectName.EndsWith('Tests'))</IsTestProject>
     <!-- Test names use underscores (Method_State_Expectation). -->
     <NoWarn>$(NoWarn);CA1707;CA1515;SA1300</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="NSubstitute" />
@@ -16,7 +20,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <Using Include="Xunit" />
     <Using Include="Shouldly" />
     <Using Include="NSubstitute" />

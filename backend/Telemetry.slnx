@@ -9,4 +9,7 @@
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.IntegrationTests/Telemetry.BuildingBlocks.IntegrationTests.csproj" />
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.UnitTests/Telemetry.BuildingBlocks.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Shared/">
+    <Project Path="tests/Shared/Telemetry.Testing/Telemetry.Testing.csproj" />
+  </Folder>
 </Solution>
