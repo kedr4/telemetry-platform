@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+# Build context: backend/
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Restore first (cached until a project file or package version changes).
+COPY global.json nuget.config Directory.Build.props Directory.Packages.props stylecop.json .editorconfig ./
+COPY src/BuildingBlocks/Telemetry.Contracts/Telemetry.Contracts.csproj src/BuildingBlocks/Telemetry.Contracts/
+COPY src/BuildingBlocks/Telemetry.BuildingBlocks/Telemetry.BuildingBlocks.csproj src/BuildingBlocks/Telemetry.BuildingBlocks/
+COPY src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj src/Services/Ingestor/Telemetry.Ingestor/
+RUN dotnet restore src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj
+
+COPY src/BuildingBlocks/ src/BuildingBlocks/
+COPY src/Services/Ingestor/ src/Services/Ingestor/
+RUN dotnet publish src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj \
+    --configuration Release --no-restore --output /app -p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+
+# Run as the non-root user shipped with the .NET images.
+USER $APP_UID
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Telemetry.Ingestor.dll"]

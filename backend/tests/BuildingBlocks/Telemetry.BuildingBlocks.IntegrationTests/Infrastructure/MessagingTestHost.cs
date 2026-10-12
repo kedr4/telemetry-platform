@@ -5,6 +5,8 @@ using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using Telemetry.BuildingBlocks.Messaging;
 using Telemetry.Contracts.Messaging;
+using Telemetry.Testing;
+using Telemetry.Testing.RabbitMq;
 
 namespace Telemetry.BuildingBlocks.IntegrationTests.Infrastructure;
 

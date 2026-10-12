@@ -6,6 +6,19 @@ name: telemetry
 x-restart: &restart
   restart: unless-stopped
 
+# .NET service images have no curl/wget; probe the readiness endpoint with bash's /dev/tcp.
+x-dotnet-healthcheck: &dotnet-healthcheck
+  test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 15s
+
+x-rabbitmq-env: &rabbitmq-env
+  RabbitMq__HostName: rabbitmq
+  RabbitMq__UserName: ${RABBITMQ_USER:-telemetry}
+  RabbitMq__Password: ${RABBITMQ_PASSWORD:-telemetry}
+
 services:
   # ---------------------------------------------------------------------------
   # External, intentionally unstable API (third-party, built from its git repo).
@@ -65,6 +78,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Microservices
+  # ---------------------------------------------------------------------------
+  ingestor:
+    <<: *restart
+    build:
+      context: ./backend
+      dockerfile: src/Services/Ingestor/Telemetry.Ingestor/Dockerfile
+    image: telemetry/ingestor:latest
+    environment:
+      <<: *rabbitmq-env
+      WeakApi__BaseUrl: http://weakapp:8080
+      WeakApi__ApiKey: ${WEAKAPP_API_KEY:-supersecret}
+    ports:
+      - "${INGESTOR_PORT:-5101}:8080"
+    networks: [backend]
+    depends_on:
+      weakapp:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *dotnet-healthcheck
 
 networks:
   backend:

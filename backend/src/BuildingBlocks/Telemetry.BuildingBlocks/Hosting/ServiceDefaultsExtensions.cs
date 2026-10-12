@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,8 @@ public static class ServiceDefaultsExtensions
         builder.AddTelemetryLogging();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddProblemDetails();
+        builder.Services.ConfigureHttpJsonOptions(options =>
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         builder.Services.AddHealthChecks();
 
         return builder;

@@ -17,10 +17,17 @@ docker compose up --build -d
 | Component | URL |
 |---|---|
 | WeakApp (unstable API) | <http://localhost:5080/health> |
+| Ingestor status | <http://localhost:5101/api/status> · health: `/health/ready` |
 | RabbitMQ management | <http://localhost:15672> (telemetry / telemetry) |
 | PostgreSQL | `localhost:5432` (telemetry / telemetry) |
 
 Ports and credentials can be overridden through a `.env` file — see [.env.example](.env.example).
+
+## Services
+
+| Service | Responsibility |
+|---|---|
+| **Ingestor** | Polls WeakApp every 6 s through a Polly pipeline (timeouts, jittered retries, circuit breaker, client-side rate limit, truncated-body detection), validates readings with FluentValidation, and publishes `MeterBatchFetched` batches. |
 
 ## Development
 

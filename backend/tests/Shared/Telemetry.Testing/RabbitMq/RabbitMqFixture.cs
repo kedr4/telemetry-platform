@@ -1,12 +1,13 @@
 using RabbitMQ.Client;
-using Telemetry.BuildingBlocks.IntegrationTests.Infrastructure;
 using Testcontainers.RabbitMq;
+using Xunit;
 
-[assembly: AssemblyFixture(typeof(RabbitMqFixture))]
+namespace Telemetry.Testing.RabbitMq;
 
-namespace Telemetry.BuildingBlocks.IntegrationTests.Infrastructure;
-
-/// <summary>One RabbitMQ container shared by every test in the assembly.</summary>
+/// <summary>
+/// A disposable RabbitMQ broker. Register with <c>[assembly: AssemblyFixture(typeof(RabbitMqFixture))]</c>
+/// to share one container across a test assembly.
+/// </summary>
 public sealed class RabbitMqFixture : IAsyncLifetime
 {
     public const string UserName = "telemetry";

@@ -29,6 +29,8 @@ public static class LoggingExtensions
             "json",
             StringComparison.OrdinalIgnoreCase);
 
+        // Polly's built-in telemetry logs every attempt, so it is limited to errors;
+        // services log the resilience events that matter themselves.
         builder.Services.AddSerilog((services, logger) =>
         {
             logger
@@ -36,6 +38,7 @@ public static class LoggingExtensions
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                 .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
+                .MinimumLevel.Override("Polly", LogEventLevel.Error)
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext()

@@ -1,6 +1,7 @@
-namespace Telemetry.BuildingBlocks.IntegrationTests.Infrastructure;
+namespace Telemetry.Testing;
 
-internal static class Eventually
+/// <summary>Polls a condition until it holds, for asserting on asynchronous side effects.</summary>
+public static class Eventually
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
