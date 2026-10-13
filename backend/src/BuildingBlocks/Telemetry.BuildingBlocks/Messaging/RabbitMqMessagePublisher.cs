@@ -7,8 +7,9 @@ using Telemetry.Contracts.Messaging;
 namespace Telemetry.BuildingBlocks.Messaging;
 
 /// <summary>
-/// Publishes over a single channel with publisher confirms. Messages are published as mandatory, so
-/// a message that no queue is bound for fails instead of being silently dropped.
+/// Publishes over a single channel with publisher confirms. Messages that require a subscriber are
+/// published as mandatory, so they fail instead of being silently dropped when no queue is bound;
+/// broadcast events without subscribers are simply discarded by the broker.
 /// </summary>
 internal sealed partial class RabbitMqMessagePublisher(
     IRabbitMqConnection connection,
@@ -41,7 +42,7 @@ internal sealed partial class RabbitMqMessagePublisher(
             await channel.BasicPublishAsync(
                 exchange: MessagingTopology.Exchange,
                 routingKey: TMessage.RoutingKey,
-                mandatory: true,
+                mandatory: TMessage.RequiresSubscriber,
                 basicProperties: properties,
                 body: body,
                 cancellationToken: cancellationToken);

@@ -1,5 +1,6 @@
 using System.Text;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using Telemetry.BuildingBlocks.Correlation;
 using Telemetry.BuildingBlocks.IntegrationTests.Infrastructure;
 using Telemetry.BuildingBlocks.Messaging;
@@ -74,6 +75,25 @@ public sealed class RabbitMqMessagingTests(RabbitMqFixture rabbit)
 
         await Eventually.TrueAsync(() => DeadLetterCountAsync(host.QueueName, expected: 1), CancellationToken);
         probe.Attempts.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task WorkItemWithoutSubscriber_FailsToPublish()
+    {
+        await using var host = await MessagingTestHost.StartAsync(rabbit, new HandlerProbe(), CancellationToken);
+
+        await Should.ThrowAsync<PublishReturnException>(() => host.Publisher.PublishAsync(new UnroutedWorkItem(1), CancellationToken));
+    }
+
+    [Fact]
+    public async Task EventWithoutSubscriber_IsPublished()
+    {
+        await using var host = await MessagingTestHost.StartAsync(rabbit, new HandlerProbe(), CancellationToken);
+
+        await Should.NotThrowAsync(() => host.Publisher.PublishAsync(new UnroutedEvent(1), CancellationToken));
+
+        // The publisher stays usable afterwards.
+        await Should.ThrowAsync<PublishReturnException>(() => host.Publisher.PublishAsync(new UnroutedWorkItem(2), CancellationToken));
     }
 
     private async Task<bool> DeadLetterCountAsync(string queueName, uint expected)

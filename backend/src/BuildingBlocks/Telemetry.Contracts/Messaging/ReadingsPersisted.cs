@@ -14,4 +14,7 @@ public sealed record ReadingsPersisted(
     IReadOnlyList<MeterReading> Readings) : IIntegrationMessage
 {
     public static string RoutingKey => "readings.persisted";
+
+    /// <summary>Gets a value indicating whether a subscriber is required: a broadcast event, so no.</summary>
+    public static bool RequiresSubscriber => false;
 }
