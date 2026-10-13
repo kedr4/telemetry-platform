@@ -8,6 +8,9 @@
   <Folder Name="/src/Services/Ingestor/">
     <Project Path="src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Processor/">
+    <Project Path="src/Services/Processor/Telemetry.Processor/Telemetry.Processor.csproj" />
+  </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/BuildingBlocks/">
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.IntegrationTests/Telemetry.BuildingBlocks.IntegrationTests.csproj" />
