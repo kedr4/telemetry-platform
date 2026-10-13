@@ -18,6 +18,7 @@ docker compose up --build -d
 |---|---|
 | WeakApp (unstable API) | <http://localhost:5080/health> |
 | Ingestor status | <http://localhost:5101/api/status> · health: `/health/ready` |
+| Processor health | <http://localhost:5102/health/ready> |
 | RabbitMQ management | <http://localhost:15672> (telemetry / telemetry) |
 | PostgreSQL | `localhost:5432` (telemetry / telemetry) |
 
@@ -28,6 +29,26 @@ Ports and credentials can be overridden through a `.env` file — see [.env.exam
 | Service | Responsibility |
 |---|---|
 | **Ingestor** | Polls WeakApp every 6 s through a Polly pipeline (timeouts, jittered retries, circuit breaker, client-side rate limit, truncated-body detection), validates readings with FluentValidation, and publishes `MeterBatchFetched` batches. |
+| **Processor** | Consumes batches and stores them in PostgreSQL exactly once (the batch id is the idempotency key), dead-letters malformed batches, and announces stored data with `ReadingsPersisted`. Owns the database schema (EF Core migrations, applied at start-up). |
+
+### Messaging
+
+| Message | Publisher → consumer | Kind |
+|---|---|---|
+| `MeterBatchFetched` (`meters.batch-fetched`) | Ingestor → Processor (`processor.meter-batches`) | Work item: publishing fails if no queue is bound |
+| `ReadingsPersisted` (`readings.persisted`) | Processor → Notifications | Broadcast event: may have no subscribers |
+
+Every consumer queue has a dead-letter queue (`<queue>.dlq`) for messages that cannot be processed.
+
+### Database schema
+
+Owned by the Processor; changes go through EF Core migrations:
+
+```bash
+cd backend
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/Services/Processor/Telemetry.Processor --output-dir Persistence/Migrations
+```
 
 ## Development
 
