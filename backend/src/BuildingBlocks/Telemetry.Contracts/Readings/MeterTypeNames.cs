@@ -17,6 +17,10 @@ public static class MeterTypeNames
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown meter type."),
     };
 
+    /// <exception cref="FormatException">The name is not a known meter type.</exception>
+    public static MeterType Parse(string wireName) =>
+        TryParse(wireName, out var type) ? type : throw new FormatException($"Unknown meter type '{wireName}'.");
+
     public static bool TryParse(string? wireName, out MeterType type)
     {
         switch (wireName)
