@@ -100,6 +100,28 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      # The processor declares the queue the ingestor publishes to (publishes are mandatory).
+      processor:
+        condition: service_healthy
+    healthcheck: *dotnet-healthcheck
+
+  processor:
+    <<: *restart
+    build:
+      context: ./backend
+      dockerfile: src/Services/Processor/Telemetry.Processor/Dockerfile
+    image: telemetry/processor:latest
+    environment:
+      <<: *rabbitmq-env
+      ConnectionStrings__Telemetry: Host=postgres;Port=5432;Database=${POSTGRES_DB:-telemetry};Username=${POSTGRES_USER:-telemetry};Password=${POSTGRES_PASSWORD:-telemetry}
+    ports:
+      - "${PROCESSOR_PORT:-5102}:8080"
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     healthcheck: *dotnet-healthcheck
 
 networks:
