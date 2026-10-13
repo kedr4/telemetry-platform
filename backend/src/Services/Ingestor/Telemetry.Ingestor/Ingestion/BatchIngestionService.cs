@@ -109,7 +109,15 @@ internal sealed partial class BatchIngestionService(
     // Expected while the client-side limiter is exhausted, so not a warning.
     private IngestionResult Throttled(TimeSpan? retryAfter)
     {
-        LogThrottled(retryAfter);
+        if (retryAfter is { } delay)
+        {
+            LogThrottledWithDelay(delay);
+        }
+        else
+        {
+            LogThrottled();
+        }
+
         return new IngestionResult(IngestionOutcome.Throttled, RetryAfter: retryAfter);
     }
 
@@ -125,8 +133,11 @@ internal sealed partial class BatchIngestionService(
     [LoggerMessage(Level = LogLevel.Warning, Message = "Ingestion cycle skipped: {Outcome}. {Reason}")]
     private partial void LogSkipped(IngestionOutcome outcome, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Ingestion cycle throttled by the client-side rate limit; retry after {RetryAfter}")]
-    private partial void LogThrottled(TimeSpan? retryAfter);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Ingestion cycle throttled by the client-side rate limit; retrying at the next poll")]
+    private partial void LogThrottled();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Ingestion cycle throttled by the client-side rate limit; retrying in {RetryAfter}")]
+    private partial void LogThrottledWithDelay(TimeSpan retryAfter);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reading rejected: {Reason}")]
     private partial void LogRejected(string reason);

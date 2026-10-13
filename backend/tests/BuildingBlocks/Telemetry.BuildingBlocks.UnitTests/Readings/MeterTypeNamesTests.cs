@@ -24,4 +24,16 @@ public class MeterTypeNamesTests
     {
         MeterTypeNames.TryParse(wireName, out _).ShouldBeFalse();
     }
+
+    [Fact]
+    public void Parse_KnownWireName_ReturnsMeterType()
+    {
+        MeterTypeNames.Parse("air_quality").ShouldBe(MeterType.AirQuality);
+    }
+
+    [Fact]
+    public void Parse_UnknownWireName_Throws()
+    {
+        Should.Throw<FormatException>(() => MeterTypeNames.Parse("temperature"));
+    }
 }
