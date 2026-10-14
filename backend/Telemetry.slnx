@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Gateway/">
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Api/Telemetry.Gateway.Api.csproj" />
     <Project Path="src/Services/Gateway/Telemetry.Gateway.Application/Telemetry.Gateway.Application.csproj" />
     <Project Path="src/Services/Gateway/Telemetry.Gateway.Domain/Telemetry.Gateway.Domain.csproj" />
     <Project Path="src/Services/Gateway/Telemetry.Gateway.Infrastructure/Telemetry.Gateway.Infrastructure.csproj" />
