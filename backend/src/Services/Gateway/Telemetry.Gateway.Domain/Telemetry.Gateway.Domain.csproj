@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Read-side domain of the gateway: meters, readings, metrics and time concepts. No dependencies.</Description>
+  </PropertyGroup>
+
+</Project>

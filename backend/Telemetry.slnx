@@ -5,6 +5,10 @@
     <Project Path="src/BuildingBlocks/Telemetry.Contracts/Telemetry.Contracts.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Gateway/">
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Application/Telemetry.Gateway.Application.csproj" />
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Domain/Telemetry.Gateway.Domain.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Ingestor/">
     <Project Path="src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj" />
   </Folder>
