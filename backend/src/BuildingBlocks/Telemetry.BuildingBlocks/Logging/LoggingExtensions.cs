@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -29,9 +30,9 @@ public static class LoggingExtensions
             "json",
             StringComparison.OrdinalIgnoreCase);
 
-        // Polly's built-in telemetry logs every attempt and every handled failure; services log the
-        // resilience events that matter themselves, with more context, so Polly's own logs are muted.
-        builder.Services.AddSerilog((services, logger) =>
+        // Polly's built-in telemetry logs every attempt and handled failure, so it is muted; services log
+        // the resilience events that matter themselves, with more context.
+        void Configure(IServiceProvider services, LoggerConfiguration logger)
         {
             logger
                 .MinimumLevel.Information()
@@ -52,9 +53,13 @@ public static class LoggingExtensions
             }
             else
             {
-                logger.WriteTo.Console(outputTemplate: TextTemplate, formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+                logger.WriteTo.Console(outputTemplate: TextTemplate, formatProvider: CultureInfo.InvariantCulture);
             }
-        });
+        }
+
+        // The host's logger lives in DI only: the static Log.Logger belongs to ServiceHost's start-up
+        // logger, and several hosts may share one process (e.g. in integration tests).
+        builder.Services.AddSerilog(Configure, preserveStaticLogger: true);
 
         return builder;
     }

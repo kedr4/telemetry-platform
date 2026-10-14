@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Gateway\Telemetry.Gateway.Application\Telemetry.Gateway.Application.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -124,6 +124,26 @@ services:
         condition: service_healthy
     healthcheck: *dotnet-healthcheck
 
+  gateway:
+    <<: *restart
+    build:
+      context: ./backend
+      dockerfile: src/Services/Gateway/Telemetry.Gateway.Api/Dockerfile
+    image: telemetry/gateway:latest
+    environment:
+      ConnectionStrings__Telemetry: Host=postgres;Port=5432;Database=${POSTGRES_DB:-telemetry};Username=${POSTGRES_USER:-telemetry};Password=${POSTGRES_PASSWORD:-telemetry}
+      Cors__AllowedOrigins__0: http://localhost:${FRONTEND_PORT:-4200}
+    ports:
+      - "${GATEWAY_PORT:-5103}:8080"
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # The processor creates the schema the gateway reads.
+      processor:
+        condition: service_healthy
+    healthcheck: *dotnet-healthcheck
+
 networks:
   backend:
     name: telemetry-backend

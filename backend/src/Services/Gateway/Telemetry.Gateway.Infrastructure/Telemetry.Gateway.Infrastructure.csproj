@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Read-only PostgreSQL access for the gateway (EF Core, no migrations: the Processor owns the schema).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Telemetry.Gateway.Application\Telemetry.Gateway.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Telemetry.BuildingBlocks\Telemetry.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Telemetry.Gateway.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

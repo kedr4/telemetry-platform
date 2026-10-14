@@ -19,6 +19,8 @@ docker compose up --build -d
 | WeakApp (unstable API) | <http://localhost:5080/health> |
 | Ingestor status | <http://localhost:5101/api/status> · health: `/health/ready` |
 | Processor health | <http://localhost:5102/health/ready> |
+| **GraphQL** (Nitro IDE in the browser) | <http://localhost:5103/graphql> |
+| **REST** (Swagger UI) | <http://localhost:5103/swagger> · OpenAPI: `/openapi/v1.json` |
 | RabbitMQ management | <http://localhost:15672> (telemetry / telemetry) |
 | PostgreSQL | `localhost:5432` (telemetry / telemetry) |
 
@@ -30,6 +32,35 @@ Ports and credentials can be overridden through a `.env` file — see [.env.exam
 |---|---|
 | **Ingestor** | Polls WeakApp every 6 s through a Polly pipeline (timeouts, jittered retries, circuit breaker, client-side rate limit, truncated-body detection), validates readings with FluentValidation, and publishes `MeterBatchFetched` batches. |
 | **Processor** | Consumes batches and stores them in PostgreSQL exactly once (the batch id is the idempotency key), dead-letters malformed batches, and announces stored data with `ReadingsPersisted`. Owns the database schema (EF Core migrations, applied at start-up). |
+| **Gateway** | Read side, built with Clean Architecture (Domain → Application → Infrastructure → Api). CQRS queries with MediatR and FluentValidation, served both as a strongly typed GraphQL API (HotChocolate) and as REST (minimal APIs + OpenAPI). Filtering, cursor pagination and aggregations by location, type and time. |
+
+### Gateway API
+
+Both APIs send the same MediatR queries, so they share validation and data access.
+
+| Use case | GraphQL | REST |
+|---|---|---|
+| Meters / locations | `meters(types)`, `locations` | `GET /api/v1/meters?type=`, `GET /api/v1/locations` |
+| Latest value per meter | `latestReadings(filter)` | `GET /api/v1/readings/latest` |
+| Readings (newest first, cursor paging) | `readings(filter, first, after)` | `GET /api/v1/readings?first=&after=` |
+| Aggregations | `aggregates(input: { groupBy, metric, bucket, filter })` | `GET /api/v1/aggregates?groupBy=&metric=&bucket=` |
+
+Filters: `location`, `type`, `from`, `to`. Aggregations group by any combination of `LOCATION`, `TYPE` and
+`TIME` (with a `MINUTE`/`HOUR`/`DAY` bucket) and return count, average, minimum, maximum and sum of a metric
+(`ENERGY`, `CO2`, `PM25`, `HUMIDITY`, `MOTION` = share of readings with motion), or only counts without a metric.
+
+Example:
+
+```graphql
+{
+  aggregates(input: { groupBy: [TIME, LOCATION], metric: CO2, bucket: HOUR }) {
+    location bucketStart average maximum
+  }
+}
+```
+
+The schema is committed as [`schema.graphql`](backend/src/Services/Gateway/Telemetry.Gateway.Api/schema.graphql);
+a test fails when it drifts (`UPDATE_GRAPHQL_SCHEMA=1 dotnet test` accepts an intended change).
 
 ### Messaging
 

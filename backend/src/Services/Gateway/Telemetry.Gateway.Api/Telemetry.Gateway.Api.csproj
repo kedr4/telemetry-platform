@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <Description>API gateway: strongly typed GraphQL (HotChocolate) and REST (OpenAPI) over the telemetry read model.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HotChocolate.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Telemetry.Gateway.Infrastructure\Telemetry.Gateway.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="HotChocolate" />
+    <Using Include="HotChocolate.Types" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Telemetry.Gateway.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

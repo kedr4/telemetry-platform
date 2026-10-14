@@ -5,6 +5,12 @@
     <Project Path="src/BuildingBlocks/Telemetry.Contracts/Telemetry.Contracts.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Gateway/">
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Api/Telemetry.Gateway.Api.csproj" />
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Application/Telemetry.Gateway.Application.csproj" />
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Domain/Telemetry.Gateway.Domain.csproj" />
+    <Project Path="src/Services/Gateway/Telemetry.Gateway.Infrastructure/Telemetry.Gateway.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Ingestor/">
     <Project Path="src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj" />
   </Folder>
@@ -17,6 +23,10 @@
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.UnitTests/Telemetry.BuildingBlocks.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Services/" />
+  <Folder Name="/tests/Services/Gateway/">
+    <Project Path="tests/Services/Gateway/Telemetry.Gateway.IntegrationTests/Telemetry.Gateway.IntegrationTests.csproj" />
+    <Project Path="tests/Services/Gateway/Telemetry.Gateway.UnitTests/Telemetry.Gateway.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/tests/Services/Ingestor/">
     <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.IntegrationTests/Telemetry.Ingestor.IntegrationTests.csproj" />
     <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.UnitTests/Telemetry.Ingestor.UnitTests.csproj" />

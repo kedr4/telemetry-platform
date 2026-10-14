@@ -7,6 +7,7 @@ using Polly;
 using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 using Telemetry.BuildingBlocks.Correlation;
 using Telemetry.Contracts.Messaging;
 
@@ -51,11 +52,25 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
     {
         await base.StopAsync(cancellationToken);
 
-        if (_channel is not null)
+        if (_channel is not { } channel)
         {
-            await _channel.CloseAsync(cancellationToken);
-            await _channel.DisposeAsync();
-            _channel = null;
+            return;
+        }
+
+        _channel = null;
+        try
+        {
+            if (channel.IsOpen)
+            {
+                await channel.CloseAsync(cancellationToken);
+            }
+
+            await channel.DisposeAsync();
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or AlreadyClosedException or OperationInterruptedException)
+        {
+            // The broker or the client library already tore the channel down; nothing left to release.
+            LogChannelAlreadyClosed(ex, _queueName);
         }
     }
 
@@ -146,6 +161,9 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
             })
             .Build();
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Channel of queue {Queue} was already closed during shutdown")]
+    private partial void LogChannelAlreadyClosed(Exception exception, string queue);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Consuming {MessageType} messages from queue {Queue}")]
     private partial void LogConsuming(string queue, string messageType);
