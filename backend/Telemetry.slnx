@@ -23,6 +23,9 @@
     <Project Path="tests/BuildingBlocks/Telemetry.BuildingBlocks.UnitTests/Telemetry.BuildingBlocks.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Services/" />
+  <Folder Name="/tests/Services/Gateway/">
+    <Project Path="tests/Services/Gateway/Telemetry.Gateway.UnitTests/Telemetry.Gateway.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/tests/Services/Ingestor/">
     <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.IntegrationTests/Telemetry.Ingestor.IntegrationTests.csproj" />
     <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.UnitTests/Telemetry.Ingestor.UnitTests.csproj" />
