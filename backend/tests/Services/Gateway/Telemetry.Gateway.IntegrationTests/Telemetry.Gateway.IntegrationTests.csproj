@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Gateway\Telemetry.Gateway.Api\Telemetry.Gateway.Api.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Telemetry.Testing\Telemetry.Testing.csproj" />
+    <!-- The Processor owns the schema: its migrations create the database the gateway reads.
+         Aliased so that its Program class does not clash with the gateway's. -->
+    <ProjectReference Include="..\..\..\..\src\Services\Processor\Telemetry.Processor\Telemetry.Processor.csproj" Aliases="processor" />
+  </ItemGroup>
+
+</Project>

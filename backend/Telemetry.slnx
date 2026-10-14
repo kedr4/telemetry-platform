@@ -24,6 +24,7 @@
   </Folder>
   <Folder Name="/tests/Services/" />
   <Folder Name="/tests/Services/Gateway/">
+    <Project Path="tests/Services/Gateway/Telemetry.Gateway.IntegrationTests/Telemetry.Gateway.IntegrationTests.csproj" />
     <Project Path="tests/Services/Gateway/Telemetry.Gateway.UnitTests/Telemetry.Gateway.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Services/Ingestor/">

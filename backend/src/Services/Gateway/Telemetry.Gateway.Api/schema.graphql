@@ -1,0 +1,212 @@
+schema {
+  query: Query
+}
+
+"Smart-home telemetry: meters, readings and aggregations."
+type Query {
+  "All meters, optionally only of the given types."
+  meters(types: [MeterType!]): [Meter!]! @cost(weight: "10")
+  "All locations that have meters, alphabetically."
+  locations: [String!]! @cost(weight: "10")
+  "The most recent reading of every meter matching the filter."
+  latestReadings(filter: ReadingFilterInput): [Reading!]! @cost(weight: "10")
+  "Readings matching the filter, newest first. Pass `pageInfo.endCursor` as `after` to get the next page."
+  readings(
+    filter: ReadingFilterInput
+    "Page size (1-500)."
+    first: Int! = 50
+    "Cursor of the previous page."
+    after: String
+  ): ReadingConnection! @cost(weight: "10")
+  "Statistics of a metric, or reading counts, grouped by location, type and/or time bucket."
+  aggregates(input: AggregationInput!): [Aggregate!]! @cost(weight: "10")
+}
+
+"Statistics of one group. Keys that were not grouped by are null; value statistics are null when no metric was requested."
+type Aggregate {
+  "Location of the group (when grouped by LOCATION)."
+  location: String
+  "Meter type of the group (when grouped by TYPE)."
+  type: MeterType
+  "Start of the time bucket (when grouped by TIME)."
+  bucketStart: DateTime
+  "Number of readings in the group."
+  count: Long!
+  "Average of the metric."
+  average: Float
+  "Minimum of the metric."
+  minimum: Float
+  "Maximum of the metric."
+  maximum: Float
+  "Sum of the metric."
+  sum: Float
+}
+
+"Air quality reading."
+type AirQualityReading implements Reading {
+  "CO2 concentration (ppm)."
+  co2: Int!
+  "Fine particulate matter PM2.5 (µg/m³)."
+  pm25: Int!
+  "Relative humidity (%)."
+  humidity: Int!
+  type: MeterType!
+  "Database identifier; together with RecordedAt it orders readings."
+  id: Long!
+  "Identifier of the meter that took the reading."
+  meterId: Int!
+  "Room the meter is installed in."
+  location: String!
+  "When the reading was taken."
+  recordedAt: DateTime!
+}
+
+"Energy consumption reading."
+type EnergyReading implements Reading {
+  "Consumed energy (kWh)."
+  energy: Float!
+  type: MeterType!
+  "Database identifier; together with RecordedAt it orders readings."
+  id: Long!
+  "Identifier of the meter that took the reading."
+  meterId: Int!
+  "Room the meter is installed in."
+  location: String!
+  "When the reading was taken."
+  recordedAt: DateTime!
+}
+
+"A physical meter, identified by its location and type."
+type Meter {
+  "Identifier of the meter."
+  id: Int!
+  "Room the meter is installed in."
+  location: String!
+  "Kind of meter."
+  type: MeterType!
+}
+
+"Motion sensor reading."
+type MotionReading implements Reading {
+  "Whether motion was detected."
+  motionDetected: Boolean!
+  type: MeterType!
+  "Database identifier; together with RecordedAt it orders readings."
+  id: Long!
+  "Identifier of the meter that took the reading."
+  meterId: Int!
+  "Room the meter is installed in."
+  location: String!
+  "When the reading was taken."
+  recordedAt: DateTime!
+}
+
+"One page of readings."
+type ReadingConnection {
+  "Readings on this page, newest first."
+  nodes: [Reading!]!
+  "Where this page ends."
+  pageInfo: ReadingPageInfo!
+  "Number of readings matching the filter across all pages."
+  totalCount: Long!
+}
+
+"Pagination state of a reading page."
+type ReadingPageInfo {
+  "Whether more readings follow."
+  hasNextPage: Boolean!
+  "Cursor to pass as `after` for the next page."
+  endCursor: String
+}
+
+"A measurement taken by a meter."
+interface Reading {
+  "Identifier of the reading."
+  id: Long!
+  "Identifier of the meter that took the reading."
+  meterId: Int!
+  "Room the meter is installed in."
+  location: String!
+  "Kind of meter."
+  type: MeterType!
+  "When the reading was taken."
+  recordedAt: DateTime!
+}
+
+"What to aggregate and how to group it."
+input AggregationInput {
+  "Dimensions to group by; combine TIME and LOCATION for one series per room."
+  groupBy: [AggregationDimension!]!
+  "Metric to compute statistics of; omit to count readings."
+  metric: Metric
+  "Time bucket width; required when grouping by TIME."
+  bucket: TimeBucket
+  "Readings to include."
+  filter: ReadingFilterInput
+}
+
+"Restricts readings; omitted fields do not restrict."
+input ReadingFilterInput {
+  "Locations to include."
+  locations: [String!]
+  "Meter types to include."
+  types: [MeterType!]
+  "Inclusive lower bound of the reading time."
+  from: DateTime
+  "Exclusive upper bound of the reading time."
+  to: DateTime
+}
+
+"What readings are grouped by when aggregating. Dimensions can be combined."
+enum AggregationDimension {
+  LOCATION
+  TYPE
+  TIME
+}
+
+enum MeterType {
+  ENERGY
+  AIR_QUALITY
+  MOTION
+}
+
+"A numeric quantity that can be aggregated."
+enum Metric {
+  "Energy consumption (kWh)."
+  ENERGY
+  "CO2 concentration (ppm)."
+  CO2
+  "PM2.5 concentration (µg/m³)."
+  PM25
+  "Relative humidity (%)."
+  HUMIDITY
+  "Motion detected, as 1 (yes) or 0 (no): its average is the share of readings with motion."
+  MOTION
+}
+
+"Width of the time intervals readings are grouped into."
+enum TimeBucket {
+  MINUTE
+  HOUR
+  DAY
+}
+
+"The `DateTime` scalar type represents a date and time with time zone offset information."
+scalar DateTime
+  @specifiedBy(url: "https://scalars.graphql.org/chillicream/date-time.html")
+
+"The `Long` scalar type represents a signed 64-bit integer."
+scalar Long
+  @specifiedBy(url: "https://scalars.graphql.org/chillicream/long.html")
+
+"The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
+directive @cost(
+  "The `weight` argument defines what value to add to the overall cost for every appearance, or possible appearance, of a type, field, argument, etc."
+  weight: String!
+) on
+  | SCALAR
+  | OBJECT
+  | FIELD_DEFINITION
+  | ARGUMENT_DEFINITION
+  | ENUM
+  | INPUT_FIELD_DEFINITION
