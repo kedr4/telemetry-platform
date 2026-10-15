@@ -1,4 +1,5 @@
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using Testcontainers.RabbitMq;
 using Xunit;
 
@@ -25,6 +26,29 @@ public sealed class RabbitMqFixture : IAsyncLifetime
     public async ValueTask InitializeAsync() => await _container.StartAsync();
 
     public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+
+    /// <summary>
+    /// Waits until a service has started consuming <paramref name="queueName"/>. Each probe uses a fresh
+    /// channel, because asking about a queue that does not exist yet makes the broker close the channel.
+    /// </summary>
+    public async Task WaitForConsumerAsync(string queueName, CancellationToken cancellationToken)
+    {
+        await using var connection = await CreateConnectionAsync(cancellationToken);
+        await Eventually.TrueAsync(
+            async () =>
+            {
+                await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+                try
+                {
+                    return await channel.ConsumerCountAsync(queueName, cancellationToken) > 0;
+                }
+                catch (OperationInterruptedException)
+                {
+                    return false;
+                }
+            },
+            cancellationToken);
+    }
 
     public async Task<IConnection> CreateConnectionAsync(CancellationToken cancellationToken)
     {

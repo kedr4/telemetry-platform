@@ -21,6 +21,7 @@ docker compose up --build -d
 | Processor health | <http://localhost:5102/health/ready> |
 | **GraphQL** (Nitro IDE in the browser) | <http://localhost:5103/graphql> |
 | **REST** (Swagger UI) | <http://localhost:5103/swagger> · OpenAPI: `/openapi/v1.json` |
+| **SignalR hub** | `http://localhost:5104/hubs/telemetry` |
 | RabbitMQ management | <http://localhost:15672> (telemetry / telemetry) |
 | PostgreSQL | `localhost:5432` (telemetry / telemetry) |
 
@@ -32,6 +33,7 @@ Ports and credentials can be overridden through a `.env` file — see [.env.exam
 |---|---|
 | **Ingestor** | Polls WeakApp every 6 s through a Polly pipeline (timeouts, jittered retries, circuit breaker, client-side rate limit, truncated-body detection), validates readings with FluentValidation, and publishes `MeterBatchFetched` batches. |
 | **Processor** | Consumes batches and stores them in PostgreSQL exactly once (the batch id is the idempotency key), dead-letters malformed batches, and announces stored data with `ReadingsPersisted`. Owns the database schema (EF Core migrations, applied at start-up). |
+| **Notifications** | Consumes `ReadingsPersisted` and pushes new readings to browsers over SignalR (WebSockets): every client receives each batch, and clients can subscribe to individual locations. |
 | **Gateway** | Read side, built with Clean Architecture (Domain → Application → Infrastructure → Api). CQRS queries with MediatR and FluentValidation, served both as a strongly typed GraphQL API (HotChocolate) and as REST (minimal APIs + OpenAPI). Filtering, cursor pagination and aggregations by location, type and time. |
 
 ### Gateway API
@@ -62,12 +64,25 @@ Example:
 The schema is committed as [`schema.graphql`](backend/src/Services/Gateway/Telemetry.Gateway.Api/schema.graphql);
 a test fails when it drifts (`UPDATE_GRAPHQL_SCHEMA=1 dotnet test` accepts an intended change).
 
+### Real-time notifications
+
+Hub `/hubs/telemetry` (strongly typed, JSON protocol):
+
+| Direction | Method | Payload |
+|---|---|---|
+| server → every client | `ReadingsUpdated` | `{ batchId, recordedAt, readings: [{ location, type, recordedAt, energy? \| co2?, pm25?, humidity? \| motionDetected? }] }` |
+| server → subscribers of a location | `LocationReadingsUpdated` | `(location, notification)` with only that location's readings |
+| client → server | `SubscribeToLocation(location)` / `UnsubscribeFromLocation(location)` | — |
+
+Notifications are at-least-once; `batchId` lets clients ignore a repeated batch. The service runs as a single
+instance: scaling out would need a SignalR backplane (e.g. Redis) or a queue per instance.
+
 ### Messaging
 
 | Message | Publisher → consumer | Kind |
 |---|---|---|
 | `MeterBatchFetched` (`meters.batch-fetched`) | Ingestor → Processor (`processor.meter-batches`) | Work item: publishing fails if no queue is bound |
-| `ReadingsPersisted` (`readings.persisted`) | Processor → Notifications | Broadcast event: may have no subscribers |
+| `ReadingsPersisted` (`readings.persisted`) | Processor → Notifications (`notifications.readings-persisted`) | Broadcast event: may have no subscribers |
 
 Every consumer queue has a dead-letter queue (`<queue>.dlq`) for messages that cannot be processed.
 

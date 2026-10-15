@@ -144,6 +144,23 @@ services:
         condition: service_healthy
     healthcheck: *dotnet-healthcheck
 
+  notifications:
+    <<: *restart
+    build:
+      context: ./backend
+      dockerfile: src/Services/Notifications/Telemetry.Notifications/Dockerfile
+    image: telemetry/notifications:latest
+    environment:
+      <<: *rabbitmq-env
+      Cors__AllowedOrigins__0: http://localhost:${FRONTEND_PORT:-4200}
+    ports:
+      - "${NOTIFICATIONS_PORT:-5104}:8080"
+    networks: [backend]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *dotnet-healthcheck
+
 networks:
   backend:
     name: telemetry-backend

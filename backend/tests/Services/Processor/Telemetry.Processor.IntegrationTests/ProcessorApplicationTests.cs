@@ -28,7 +28,7 @@ public sealed class ProcessorApplicationTests(MigratedDatabaseFixture database, 
         await using var channel = await connection.CreateChannelAsync(cancellationToken: CancellationToken);
 
         var announcements = await DeclareAnnouncementQueueAsync(channel);
-        await WaitForConsumerAsync(channel);
+        await rabbit.WaitForConsumerAsync(QueueNames.ProcessorMeterBatches, CancellationToken);
 
         // A valid batch is stored and announced.
         var message = Batches.ForLocation(Batches.UniqueLocation("Kitchen"));
@@ -72,12 +72,6 @@ public sealed class ProcessorApplicationTests(MigratedDatabaseFixture database, 
         await MessagingTopology.DeclareConsumerQueueAsync(channel, queue, ReadingsPersisted.RoutingKey, CancellationToken);
         return queue;
     }
-
-    // The consumer declares its queue in the background once migrations have run.
-    private static async Task WaitForConsumerAsync(IChannel channel) =>
-        await Eventually.TrueAsync(
-            async () => await channel.ConsumerCountAsync(QueueNames.ProcessorMeterBatches, CancellationToken) > 0,
-            CancellationToken);
 
     private WebApplicationFactory<Program> CreateFactory() =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
