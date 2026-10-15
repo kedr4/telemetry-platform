@@ -7,7 +7,7 @@ namespace Telemetry.Notifications.Hubs;
 /// Real-time telemetry hub. Every client receives <see cref="ITelemetryClient.ReadingsUpdated"/>; clients can
 /// additionally subscribe to individual locations to receive <see cref="ITelemetryClient.LocationReadingsUpdated"/>.
 /// </summary>
-internal sealed partial class TelemetryHub(NotificationsMetrics metrics, ILogger<TelemetryHub> logger) : Hub<ITelemetryClient>
+public sealed partial class TelemetryHub(NotificationsMetrics metrics, ILogger<TelemetryHub> logger) : Hub<ITelemetryClient>
 {
     public const string Path = "/hubs/telemetry";
     public const int MaxLocationLength = 64;

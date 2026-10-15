@@ -34,6 +34,10 @@
     <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.IntegrationTests/Telemetry.Ingestor.IntegrationTests.csproj" />
     <Project Path="tests/Services/Ingestor/Telemetry.Ingestor.UnitTests/Telemetry.Ingestor.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Services/Notifications/">
+    <Project Path="tests/Services/Notifications/Telemetry.Notifications.IntegrationTests/Telemetry.Notifications.IntegrationTests.csproj" />
+    <Project Path="tests/Services/Notifications/Telemetry.Notifications.UnitTests/Telemetry.Notifications.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/tests/Services/Processor/">
     <Project Path="tests/Services/Processor/Telemetry.Processor.IntegrationTests/Telemetry.Processor.IntegrationTests.csproj" />
     <Project Path="tests/Services/Processor/Telemetry.Processor.UnitTests/Telemetry.Processor.UnitTests.csproj" />

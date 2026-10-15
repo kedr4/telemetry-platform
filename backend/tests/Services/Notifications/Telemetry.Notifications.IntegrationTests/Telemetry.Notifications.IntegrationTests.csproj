@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Notifications\Telemetry.Notifications\Telemetry.Notifications.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Telemetry.Testing\Telemetry.Testing.csproj" />
+  </ItemGroup>
+
+</Project>
