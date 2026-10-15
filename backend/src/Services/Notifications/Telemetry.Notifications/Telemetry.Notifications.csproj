@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <Description>Pushes newly stored readings to browsers in real time over SignalR.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Telemetry.BuildingBlocks\Telemetry.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Telemetry.Notifications.UnitTests" />
+    <InternalsVisibleTo Include="Telemetry.Notifications.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

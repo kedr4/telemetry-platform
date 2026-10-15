@@ -14,6 +14,9 @@
   <Folder Name="/src/Services/Ingestor/">
     <Project Path="src/Services/Ingestor/Telemetry.Ingestor/Telemetry.Ingestor.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Notifications/">
+    <Project Path="src/Services/Notifications/Telemetry.Notifications/Telemetry.Notifications.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Processor/">
     <Project Path="src/Services/Processor/Telemetry.Processor/Telemetry.Processor.csproj" />
   </Folder>
