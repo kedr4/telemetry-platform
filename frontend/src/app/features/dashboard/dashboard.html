@@ -1,0 +1,33 @@
+<header class="page-header">
+  <h1>Overview</h1>
+  <mat-button-toggle-group
+    aria-label="Time range"
+    hideSingleSelectionIndicator
+    [value]="range()"
+    (change)="range.set($event.value)"
+  >
+    @for (option of ranges; track option.id) {
+      <mat-button-toggle [value]="option.id">{{ option.label }}</mat-button-toggle>
+    }
+  </mat-button-toggle-group>
+</header>
+
+<section aria-labelledby="rooms-heading">
+  <h2 id="rooms-heading" class="section-title">Rooms · latest values</h2>
+  <app-panel heading="Current readings" subheading="Updated live" [resource]="store.latest">
+    <div class="rooms">
+      @for (room of store.rooms(); track room.location) {
+        <app-room-card [room]="room" />
+      } @empty {
+        <p class="empty">No meters have reported yet.</p>
+      }
+    </div>
+  </app-panel>
+</section>
+
+<section class="panels" aria-label="Charts">
+  <app-trends-panel class="wide" [range]="range()" [refreshTick]="store.refreshTick()" />
+  <app-room-comparison-panel [range]="range()" [refreshTick]="store.refreshTick()" />
+  <app-meter-types-panel [range]="range()" [refreshTick]="store.refreshTick()" />
+  <app-live-feed class="wide" [entries]="store.feed()" />
+</section>

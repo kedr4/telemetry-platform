@@ -161,6 +161,23 @@ services:
         condition: service_healthy
     healthcheck: *dotnet-healthcheck
 
+  # ---------------------------------------------------------------------------
+  # Frontend (nginx serves the app and proxies /graphql and /hubs)
+  # ---------------------------------------------------------------------------
+  frontend:
+    <<: *restart
+    build:
+      context: ./frontend
+    image: telemetry/frontend:latest
+    ports:
+      - "${FRONTEND_PORT:-4200}:8080"
+    networks: [backend]
+    depends_on:
+      gateway:
+        condition: service_healthy
+      notifications:
+        condition: service_healthy
+
 networks:
   backend:
     name: telemetry-backend

@@ -1,0 +1,77 @@
+:host {
+  display: block;
+}
+
+mat-card {
+  height: 100%;
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+dd {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.level {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.level-good {
+  background: #2e7d32;
+}
+
+.level-moderate {
+  background: #f9a825;
+}
+
+.level-poor {
+  background: #c62828;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.motion-active {
+  color: var(--mat-sys-primary);
+}

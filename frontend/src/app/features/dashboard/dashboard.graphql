@@ -1,0 +1,18 @@
+query LatestReadings($filter: ReadingFilterInput) {
+  latestReadings(filter: $filter) {
+    ...ReadingFields
+  }
+}
+
+query Aggregates($input: AggregationInput!) {
+  aggregates(input: $input) {
+    location
+    type
+    bucketStart
+    count
+    average
+    minimum
+    maximum
+    sum
+  }
+}

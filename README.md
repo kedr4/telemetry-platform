@@ -6,6 +6,8 @@ PostgreSQL, and presents it in an Angular dashboard over GraphQL, REST and Signa
 
 > Work in progress — see [docs/implementation-plan.md](docs/implementation-plan.md) for the roadmap.
 
+`docker compose up --build -d` starts everything; open <http://localhost:4200> for the live dashboard.
+
 ## Quick start
 
 Requirements: Docker Desktop (Compose v2).
@@ -16,6 +18,7 @@ docker compose up --build -d
 
 | Component | URL |
 |---|---|
+| **Dashboard** (Angular app) | <http://localhost:4200> |
 | WeakApp (unstable API) | <http://localhost:5080/health> |
 | Ingestor status | <http://localhost:5101/api/status> · health: `/health/ready` |
 | Processor health | <http://localhost:5102/health/ready> |
@@ -114,7 +117,7 @@ dotnet format Telemetry.slnx --verify-no-changes         # style check
 | `backend/src/BuildingBlocks/` | Message contracts and shared infrastructure (logging, correlation, health, RabbitMQ) |
 | `backend/src/Services/` | One folder per microservice |
 | `backend/tests/` | Unit and integration tests, mirroring `src/` |
-| `frontend/` | Angular single-page application |
+| `frontend/` | Angular 22 dashboard (Material, Apollo GraphQL, SignalR, ECharts) — see [frontend/README.md](frontend/README.md) |
 | `infra/` | Infrastructure configuration (Prometheus, Grafana, …) |
 | `docs/` | Architecture notes, implementation plan, API analysis |
 | `docker-compose.yml` | Runs the entire platform |

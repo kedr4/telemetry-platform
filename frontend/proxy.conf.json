@@ -1,0 +1,11 @@
+{
+  "/graphql": {
+    "target": "http://localhost:5103",
+    "secure": false
+  },
+  "/hubs": {
+    "target": "http://localhost:5104",
+    "secure": false,
+    "ws": true
+  }
+}
