@@ -1,0 +1,120 @@
+<header class="page-header">
+  <h1>Readings</h1>
+</header>
+
+<form class="filters" aria-label="Filters" (submit)="$event.preventDefault()">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Rooms</mat-label>
+    <mat-select multiple [value]="locations()" (valueChange)="locations.set($event)">
+      @for (location of availableLocations.value() ?? []; track location) {
+        <mat-option [value]="location">{{ location }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Meter types</mat-label>
+    <mat-select multiple [value]="types()" (valueChange)="types.set($event)">
+      @for (type of meterTypes; track type.id) {
+        <mat-option [value]="type.id">{{ type.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>From</mat-label>
+    <input
+      #fromInput
+      matInput
+      type="datetime-local"
+      [value]="from()"
+      (change)="from.set(fromInput.value)"
+    />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>To</mat-label>
+    <input
+      #toInput
+      matInput
+      type="datetime-local"
+      [value]="to()"
+      (change)="to.set(toInput.value)"
+    />
+  </mat-form-field>
+
+  <button mat-button type="button" (click)="clearFilters()">
+    <mat-icon>filter_alt_off</mat-icon> Clear
+  </button>
+</form>
+
+<app-panel heading="Stored readings" subheading="Newest first" [resource]="page">
+  <div class="table-container">
+    <table mat-table [dataSource]="rows()" [trackBy]="trackRow">
+      <ng-container matColumnDef="recordedAt">
+        <th mat-header-cell *matHeaderCellDef>Time</th>
+        <td mat-cell *matCellDef="let row">
+          {{ row.reading.recordedAt | date: 'dd.MM.yyyy HH:mm:ss' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="location">
+        <th mat-header-cell *matHeaderCellDef>Room</th>
+        <td mat-cell *matCellDef="let row">{{ row.reading.location }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Meter</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="type">
+            <mat-icon aria-hidden="true">{{ typeIcon(row.reading.type) }}</mat-icon>
+            {{ typeLabel(row.reading.type) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="value">
+        <th mat-header-cell *matHeaderCellDef>Value</th>
+        <td mat-cell *matCellDef="let row">{{ row.description }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      <tr class="mat-mdc-row" *matNoDataRow>
+        <td class="mat-mdc-cell no-data" [attr.colspan]="columns.length">
+          No readings match the filters.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <nav class="pagination" aria-label="Pagination">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="page-size">
+      <mat-label>Per page</mat-label>
+      <mat-select [value]="pageSize()" (valueChange)="pageSize.set($event)">
+        @for (size of pageSizes; track size) {
+          <mat-option [value]="size">{{ size }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <span class="range" aria-live="polite">{{ rangeLabel() }}</span>
+    <button
+      mat-icon-button
+      type="button"
+      aria-label="Previous page"
+      [disabled]="!pager().hasPrevious"
+      (click)="previousPage()"
+    >
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      aria-label="Next page"
+      [disabled]="!page.value()?.pageInfo?.hasNextPage"
+      (click)="nextPage()"
+    >
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </nav>
+</app-panel>

@@ -1,0 +1,12 @@
+query Readings($filter: ReadingFilterInput, $first: Int!, $after: String) {
+  readings(filter: $filter, first: $first, after: $after) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    nodes {
+      ...ReadingFields
+    }
+  }
+}
