@@ -1,0 +1,28 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<mat-toolbar class="toolbar">
+  <mat-icon class="brand-icon" aria-hidden="true">sensors</mat-icon>
+  <span class="brand">Smart Home Telemetry</span>
+
+  <nav class="navigation" aria-label="Main">
+    @for (item of navigation; track item.path) {
+      <a
+        mat-button
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.exact }"
+        ariaCurrentWhenActive="page"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <span class="spacer"></span>
+  <app-connection-status />
+</mat-toolbar>
+
+<main id="main" class="content">
+  <router-outlet />
+</main>
