@@ -1,0 +1,40 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.panel {
+  height: 100%;
+}
+
+mat-card-header {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.panel-progress {
+  height: 4px;
+}
+
+.panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 160px;
+  text-align: center;
+}
+
+.panel-error {
+  color: var(--mat-sys-error);
+}
