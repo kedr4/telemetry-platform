@@ -1,0 +1,22 @@
+fragment ReadingFields on Reading {
+  __typename
+  id
+  location
+  type
+  recordedAt
+  ... on EnergyReading {
+    energy
+  }
+  ... on AirQualityReading {
+    co2
+    pm25
+    humidity
+  }
+  ... on MotionReading {
+    motionDetected
+  }
+}
+
+query Locations {
+  locations
+}
