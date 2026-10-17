@@ -8,6 +8,7 @@ using Telemetry.BuildingBlocks.Messaging;
 using Telemetry.Contracts.Messaging;
 using Telemetry.Processor.IntegrationTests.Infrastructure;
 using Telemetry.Testing;
+using Telemetry.Testing.Metrics;
 using Telemetry.Testing.RabbitMq;
 
 namespace Telemetry.Processor.IntegrationTests;
@@ -20,7 +21,7 @@ public sealed class ProcessorApplicationTests(MigratedDatabaseFixture database, 
     private static CancellationToken CancellationToken => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task BatchFromTheBroker_IsStored_AndAnnounced_AndPoisonIsDeadLettered()
+    public async Task BatchFromTheBroker_IsStored_AndAnnounced_AndPoisonIsDeadLettered_AndMetricsAreExported()
     {
         await using var factory = CreateFactory();
         using var http = factory.CreateClient();
@@ -61,6 +62,26 @@ public sealed class ProcessorApplicationTests(MigratedDatabaseFixture database, 
 
         var readiness = await http.GetAsync(new Uri("/health/ready", UriKind.Relative), CancellationToken);
         readiness.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // Both outcomes are visible to Prometheus.
+        var metrics = await http.GetStringAsync(new Uri("/metrics", UriKind.Relative), CancellationToken);
+        PrometheusText.HasSample(metrics, "telemetry_processor_batches_total", ("outcome", "stored")).ShouldBeTrue();
+        PrometheusText.HasSample(metrics, "telemetry_processor_readings_stored_total").ShouldBeTrue();
+        PrometheusText.HasSample(
+            metrics,
+            "telemetry_messaging_consumed_total",
+            ("queue", QueueNames.ProcessorMeterBatches),
+            ("outcome", "acked")).ShouldBeTrue();
+        PrometheusText.HasSample(
+            metrics,
+            "telemetry_messaging_consumed_total",
+            ("queue", QueueNames.ProcessorMeterBatches),
+            ("outcome", "dead_lettered")).ShouldBeTrue();
+        PrometheusText.HasSample(
+            metrics,
+            "telemetry_messaging_published_total",
+            ("message_type", nameof(ReadingsPersisted)),
+            ("outcome", "confirmed")).ShouldBeTrue();
     }
 
     private static async Task PublishAsync(IChannel channel, string routingKey, byte[] body) =>
