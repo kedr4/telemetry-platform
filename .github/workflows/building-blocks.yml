@@ -1,0 +1,39 @@
+name: Building blocks
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - backend/tests/BuildingBlocks/**
+      - backend/src/BuildingBlocks/**
+      - backend/tests/Shared/**
+      - backend/tests/Directory.Build.props
+      - backend/*.props
+      - backend/global.json
+      - backend/nuget.config
+      - backend/stylecop.json
+      - backend/.editorconfig
+      - .github/workflows/_dotnet-service.yml
+      - .github/workflows/building-blocks.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_dotnet-service.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      name: Building blocks
+      project-dirs: src/BuildingBlocks tests/BuildingBlocks tests/Shared
+      unit-tests: tests/BuildingBlocks/Telemetry.BuildingBlocks.UnitTests
+      integration-tests: tests/BuildingBlocks/Telemetry.BuildingBlocks.IntegrationTests

@@ -1,0 +1,43 @@
+name: Gateway
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - backend/src/Services/Processor/** # integration tests apply the Processor migrations
+      - backend/tests/Services/Gateway/**
+      - backend/src/Services/Gateway/**
+      - backend/src/BuildingBlocks/**
+      - backend/tests/Shared/**
+      - backend/tests/Directory.Build.props
+      - backend/*.props
+      - backend/global.json
+      - backend/nuget.config
+      - backend/stylecop.json
+      - backend/.editorconfig
+      - .github/workflows/_dotnet-service.yml
+      - .github/workflows/gateway.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_dotnet-service.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      name: Gateway
+      project-dirs: src/Services/Gateway tests/Services/Gateway
+      unit-tests: tests/Services/Gateway/Telemetry.Gateway.UnitTests
+      integration-tests: tests/Services/Gateway/Telemetry.Gateway.IntegrationTests
+      dockerfile: src/Services/Gateway/Telemetry.Gateway.Api/Dockerfile
+      image: telemetry-gateway
