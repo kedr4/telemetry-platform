@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Telemetry.Gateway.IntegrationTests.Infrastructure;
+using Telemetry.Testing.Metrics;
 
 namespace Telemetry.Gateway.IntegrationTests.Api;
 
@@ -91,6 +92,25 @@ public sealed class RestApiTests(GatewayDatabaseFixture database) : IAsyncLifeti
         using var response = await _http.GetAsync(new Uri(url, UriKind.Relative), CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Queries_AreExportedAsPrometheusMetrics()
+    {
+        using var readings = await GetJsonAsync($"/api/v1/readings/latest?location={_house.Garage}");
+        using var invalid = await _http.GetAsync(new Uri("/api/v1/readings?first=0", UriKind.Relative), CancellationToken);
+        invalid.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        var metrics = await _http.GetStringAsync(new Uri("/metrics", UriKind.Relative), CancellationToken);
+
+        const string QueryDuration = "telemetry_gateway_query_duration_milliseconds_count";
+        PrometheusText.HasSample(metrics, QueryDuration, ("query", "GetLatestReadingsQuery"), ("outcome", "success")).ShouldBeTrue();
+        PrometheusText.HasSample(metrics, QueryDuration, ("query", "GetReadingsQuery"), ("outcome", "invalid")).ShouldBeTrue();
+        PrometheusText.HasSample(
+            metrics,
+            "http_server_request_duration_seconds_count",
+            ("http_route", "/api/v1/readings/latest"),
+            ("http_response_status_code", "200")).ShouldBeTrue();
     }
 
     private async Task<JsonDocument> GetJsonAsync(string url)
