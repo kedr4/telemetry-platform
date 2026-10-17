@@ -27,6 +27,8 @@ docker compose up --build -d
 | **SignalR hub** | `http://localhost:5104/hubs/telemetry` |
 | RabbitMQ management | <http://localhost:15672> (telemetry / telemetry) |
 | PostgreSQL | `localhost:5432` (telemetry / telemetry) |
+| **Grafana** (provisioned dashboards) | <http://localhost:3000> (viewing needs no login; admin / admin to edit) |
+| Prometheus | <http://localhost:9090> · alerts: `/alerts` |
 
 Ports and credentials can be overridden through a `.env` file — see [.env.example](.env.example).
 
@@ -110,6 +112,33 @@ dotnet test --solution Telemetry.slnx                    # unit + integration te
 dotnet format Telemetry.slnx --verify-no-changes         # style check
 ```
 
+## Observability
+
+Every service exposes Prometheus metrics on `/metrics` (OpenTelemetry exporter, wired up once in the shared
+service defaults). Besides the .NET runtime, ASP.NET Core, SignalR, HttpClient, Polly and Npgsql meters, the
+services record domain metrics:
+
+| Meter | Instruments |
+|---|---|
+| `Telemetry.Ingestor` | `telemetry.ingestor.cycles` (by outcome), `…readings.published`, `…readings.rejected` |
+| `Telemetry.Processor` | `telemetry.processor.batches` (stored / duplicate), `…readings.stored`, `…batch.duration` |
+| `Telemetry.Notifications` | `telemetry.notifications.clients.connected`, `…sent`, `…readings` |
+| `Telemetry.Gateway` | `telemetry.gateway.query.duration` (by query and outcome; GraphQL and REST alike) |
+| `Telemetry.Messaging` | `telemetry.messaging.published` / `…consumed` (acked, dead-lettered, requeued), `…handler.retries`, `…handler.duration` |
+
+Prometheus also scrapes RabbitMQ (per-queue depth via the bundled `rabbitmq_prometheus` plugin) and PostgreSQL
+(`postgres-exporter`). Grafana starts with two provisioned dashboards:
+
+- **Telemetry overview** (home): pipeline health at a glance, ingestion outcomes, WeakApp status codes and
+  latency, Polly retries/timeouts/circuit breaker/rate limiting, the reading flow through every stage, queue
+  depths, dead-lettering, and gateway traffic, latency and query outcomes.
+- **Service runtime**: CPU, memory, GC, thread pool, exceptions, HTTP, connections, messaging and database
+  metrics per service.
+
+Alert rules ([infra/prometheus/alerts.yml](infra/prometheus/alerts.yml), unit-tested with `promtool test rules`):
+a service stops being scraped, ingestion publishes nothing for 5 minutes, messages land in a dead-letter queue,
+a queue backs up, or more than 5% of gateway requests fail.
+
 ## Continuous integration
 
 GitHub Actions runs one workflow per deployable component, each triggered only by changes to its own
@@ -120,6 +149,7 @@ code or to the shared code and build settings it depends on.
 | `ingestor.yml`, `processor.yml`, `gateway.yml`, `notifications.yml` | the service, its tests, building blocks, shared build settings | format check → Release build (warnings are errors) → unit tests → integration tests (Testcontainers) → Docker image |
 | `building-blocks.yml` | shared libraries and test helpers | format check → build → unit and integration tests |
 | `frontend.yml` | `frontend/`, the gateway's `schema.graphql` | `npm audit` (production deps) → generated GraphQL types up to date → Prettier → ESLint → Vitest → production build → Docker image |
+| `observability.yml` | `infra/` | `promtool check config`, alert rule unit tests, dashboard JSON checks |
 | `compose.yml` | `docker-compose.yml`, `.env.example` | `docker compose config` with defaults and with `.env.example` |
 
 The .NET services share `_dotnet-service.yml`, a reusable workflow parameterised by the service's projects

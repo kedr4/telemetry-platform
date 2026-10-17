@@ -7,11 +7,12 @@ using Serilog.Events;
 using Telemetry.BuildingBlocks.Correlation;
 using Telemetry.BuildingBlocks.Health;
 using Telemetry.BuildingBlocks.Logging;
+using Telemetry.BuildingBlocks.Observability;
 
 namespace Telemetry.BuildingBlocks.Hosting;
 
 /// <summary>
-/// Conventions every microservice shares: logging, correlation, error handling and health endpoints.
+/// Conventions every microservice shares: logging, metrics, correlation, error handling and health endpoints.
 /// </summary>
 public static class ServiceDefaultsExtensions
 {
@@ -20,6 +21,7 @@ public static class ServiceDefaultsExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.AddTelemetryLogging();
+        builder.AddTelemetryMetrics();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddProblemDetails();
         builder.Services.ConfigureHttpJsonOptions(options =>
@@ -38,6 +40,7 @@ public static class ServiceDefaultsExtensions
         app.UseExceptionHandler();
         app.UseStatusCodePages();
         app.MapTelemetryHealthChecks();
+        app.MapTelemetryMetrics();
 
         return app;
     }

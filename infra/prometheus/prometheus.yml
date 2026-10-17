@@ -1,0 +1,36 @@
+# Scrapes every microservice's /metrics endpoint plus RabbitMQ and PostgreSQL.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: telemetry-services
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["ingestor:8080"]
+        labels: { service: ingestor }
+      - targets: ["processor:8080"]
+        labels: { service: processor }
+      - targets: ["gateway:8080"]
+        labels: { service: gateway }
+      - targets: ["notifications:8080"]
+        labels: { service: notifications }
+
+  # Per-queue series (depth, publish/deliver rates) from the bundled rabbitmq_prometheus plugin.
+  - job_name: rabbitmq
+    metrics_path: /metrics/per-object
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+        labels: { service: rabbitmq }
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels: { service: postgres }

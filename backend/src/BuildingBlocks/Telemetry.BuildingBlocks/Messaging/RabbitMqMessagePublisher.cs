@@ -14,6 +14,7 @@ namespace Telemetry.BuildingBlocks.Messaging;
 internal sealed partial class RabbitMqMessagePublisher(
     IRabbitMqConnection connection,
     TimeProvider timeProvider,
+    MessagingMetrics metrics,
     ILogger<RabbitMqMessagePublisher> logger) : IMessagePublisher, IAsyncDisposable
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -49,6 +50,8 @@ internal sealed partial class RabbitMqMessagePublisher(
         }
         catch
         {
+            metrics.Published(properties.Type, confirmed: false);
+
             // A failed publish may leave the channel unusable; start fresh next time.
             await ResetChannelAsync();
             throw;
@@ -58,6 +61,7 @@ internal sealed partial class RabbitMqMessagePublisher(
             _lock.Release();
         }
 
+        metrics.Published(properties.Type, confirmed: true);
         LogPublished(properties.Type, TMessage.RoutingKey, properties.MessageId);
     }
 

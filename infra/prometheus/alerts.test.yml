@@ -1,0 +1,83 @@
+# Unit tests for alerts.yml: promtool test rules alerts.test.yml
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 15s
+
+tests:
+  - name: A service that stops answering scrapes raises ServiceDown after a minute
+    interval: 15s
+    input_series:
+      - series: 'up{job="telemetry-services",service="processor",instance="processor:8080"}'
+        values: "1 1 0 0 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: ServiceDown
+        exp_alerts: []
+      - eval_time: 105s
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: telemetry-services
+              service: processor
+              instance: processor:8080
+            exp_annotations:
+              summary: processor is not being scraped
+              description: Prometheus has not reached processor:8080 for over a minute.
+
+  - name: Messages in a dead-letter queue raise MessagesDeadLettered, other queues do not
+    interval: 15s
+    input_series:
+      - series: 'rabbitmq_queue_messages_ready{queue="processor.meter-batches.dlq"}'
+        values: "0 2 2 2 2 2 2"
+      - series: 'rabbitmq_queue_messages_ready{queue="processor.meter-batches"}'
+        values: "5 5 5 5 5 5 5"
+    alert_rule_test:
+      - eval_time: 90s
+        alertname: MessagesDeadLettered
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              queue: processor.meter-batches.dlq
+            exp_annotations:
+              summary: Messages waiting in processor.meter-batches.dlq
+              description: 2 message(s) could not be processed and were dead-lettered.
+      - eval_time: 90s
+        alertname: QueueBacklog
+        exp_alerts: []
+
+  - name: Ingestion that publishes nothing for five minutes raises IngestionStalled
+    interval: 1m
+    input_series:
+      - series: 'telemetry_ingestor_cycles_total{outcome="Published"}'
+        values: "0+5x5 30x15"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: IngestionStalled
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: IngestionStalled
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: No batches ingested for 5 minutes
+              description: The ingestor has not published a single batch; WeakApp may be down or rate limiting constantly.
+
+  - name: A gateway failing more than 5% of requests raises GatewayErrors
+    interval: 1m
+    input_series:
+      - series: 'http_server_request_duration_seconds_count{service="gateway",http_response_status_code="200"}'
+        values: "0+90x15"
+      - series: 'http_server_request_duration_seconds_count{service="gateway",http_response_status_code="500"}'
+        values: "0+10x15"
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: GatewayErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: More than 5% of gateway requests fail
+              description: 10% of gateway requests returned a server error.

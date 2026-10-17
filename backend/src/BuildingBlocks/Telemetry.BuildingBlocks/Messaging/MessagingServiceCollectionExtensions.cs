@@ -22,6 +22,8 @@ public static class MessagingServiceCollectionExtensions
             .ValidateOnStart();
 
         services.TryAddSingleton(TimeProvider.System);
+        services.AddMetrics();
+        services.TryAddSingleton<MessagingMetrics>();
         services.TryAddSingleton<IRabbitMqConnection, RabbitMqConnection>();
         services.TryAddSingleton<IMessagePublisher, RabbitMqMessagePublisher>();
         services.AddHostedService<RabbitMqConnectionInitializer>();

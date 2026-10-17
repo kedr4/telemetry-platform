@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,6 +31,7 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly RabbitMqOptions _options;
     private readonly ILogger<RabbitMqConsumer<TMessage>> _logger;
+    private readonly MessagingMetrics _metrics;
     private readonly ResiliencePipeline _handlerPipeline;
     private IChannel? _channel;
 
@@ -38,6 +40,7 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
         IRabbitMqConnection connection,
         IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqOptions> options,
+        MessagingMetrics metrics,
         ILogger<RabbitMqConsumer<TMessage>> logger)
     {
         _queueName = queueName;
@@ -45,6 +48,7 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
         _scopeFactory = scopeFactory;
         _options = options.Value;
         _logger = logger;
+        _metrics = metrics;
         _handlerPipeline = BuildHandlerPipeline();
     }
 
@@ -107,10 +111,12 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
         {
             LogUndeserializable(ex, _queueName, delivery.BasicProperties.MessageId);
             await channel.BasicRejectAsync(delivery.DeliveryTag, requeue: false, CancellationToken.None);
+            _metrics.Consumed(_queueName, ConsumeOutcome.DeadLettered);
             return;
         }
 
         var context = new MessageContext(delivery.BasicProperties.MessageId, correlationId, delivery.Redelivered);
+        var started = Stopwatch.GetTimestamp();
 
         try
         {
@@ -118,15 +124,18 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
                 async token => await HandleInScopeAsync(message, context, token),
                 stoppingToken);
             await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false, CancellationToken.None);
+            _metrics.Consumed(_queueName, ConsumeOutcome.Acked, Stopwatch.GetElapsedTime(started));
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
             await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true, CancellationToken.None);
+            _metrics.Consumed(_queueName, ConsumeOutcome.Requeued);
         }
         catch (Exception ex)
         {
             LogDeadLettered(ex, _queueName, context.MessageId);
             await channel.BasicRejectAsync(delivery.DeliveryTag, requeue: false, CancellationToken.None);
+            _metrics.Consumed(_queueName, ConsumeOutcome.DeadLettered, Stopwatch.GetElapsedTime(started));
         }
     }
 
@@ -156,6 +165,7 @@ internal sealed partial class RabbitMqConsumer<TMessage> : BackgroundService
                 OnRetry = args =>
                 {
                     LogHandlerRetry(args.Outcome.Exception, _queueName, args.AttemptNumber + 1);
+                    _metrics.HandlerRetried(_queueName);
                     return ValueTask.CompletedTask;
                 },
             })

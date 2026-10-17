@@ -1,0 +1,50 @@
+groups:
+  - name: telemetry
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} is not being scraped"
+          description: "Prometheus has not reached {{ $labels.instance }} for over a minute."
+
+      # The upstream API fails often by design; alert only when almost nothing gets through.
+      - alert: IngestionStalled
+        expr: sum(rate(telemetry_ingestor_cycles_total{outcome="Published"}[5m])) == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: No batches ingested for 5 minutes
+          description: The ingestor has not published a single batch; WeakApp may be down or rate limiting constantly.
+
+      - alert: MessagesDeadLettered
+        expr: sum by (queue) (rabbitmq_queue_messages_ready{queue=~".+[.]dlq"}) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Messages waiting in {{ $labels.queue }}"
+          description: "{{ $value }} message(s) could not be processed and were dead-lettered."
+
+      - alert: QueueBacklog
+        expr: sum by (queue) (rabbitmq_queue_messages_ready{queue!~".+[.]dlq"}) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.queue }} is backing up"
+          description: "{{ $value }} messages are waiting; a consumer is slow or down."
+
+      - alert: GatewayErrors
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{service="gateway",http_response_status_code=~"5.."}[5m]))
+            / sum(rate(http_server_request_duration_seconds_count{service="gateway"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of gateway requests fail
+          description: "{{ $value | humanizePercentage }} of gateway requests returned a server error."

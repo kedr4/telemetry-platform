@@ -1,0 +1,47 @@
+name: Observability
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - infra/**
+      - .github/workflows/observability.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROMETHEUS_IMAGE: prom/prometheus:v3.15.0
+
+jobs:
+  validate:
+    name: Validate Prometheus and Grafana configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check Prometheus configuration and alert rules
+        run: >
+          docker run --rm -v "$PWD/infra/prometheus:/etc/prometheus:ro" --entrypoint promtool "$PROMETHEUS_IMAGE"
+          check config /etc/prometheus/prometheus.yml
+
+      - name: Unit-test alert rules
+        run: >
+          docker run --rm -v "$PWD/infra/prometheus:/w:ro" -w /w --entrypoint promtool "$PROMETHEUS_IMAGE"
+          test rules alerts.test.yml
+
+      - name: Check Grafana dashboards
+        run: |
+          for dashboard in infra/grafana/dashboards/*.json; do
+            jq -e '.uid and .title and (.panels | length > 0)' "$dashboard" > /dev/null \
+              || { echo "::error file=$dashboard::not a valid dashboard (needs uid, title and panels)"; exit 1; }
+            # Every query must use the provisioned data source, so dashboards work on a fresh Grafana.
+            jq -e '[.. | objects | select(has("datasource")) | .datasource.uid] | all(. == "prometheus")' "$dashboard" > /dev/null \
+              || { echo "::error file=$dashboard::uses a data source other than uid 'prometheus'"; exit 1; }
+          done
+          duplicates=$(jq -r '.uid' infra/grafana/dashboards/*.json | sort | uniq -d)
+          [ -z "$duplicates" ] || { echo "::error::duplicate dashboard uids: $duplicates"; exit 1; }

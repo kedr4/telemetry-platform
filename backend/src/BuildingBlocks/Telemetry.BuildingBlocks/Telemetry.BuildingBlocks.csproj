@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Cross-cutting infrastructure shared by the telemetry microservices: logging, correlation, health checks and RabbitMQ messaging.</Description>
+    <Description>Cross-cutting infrastructure shared by the telemetry microservices: logging, metrics, correlation, health checks and RabbitMQ messaging.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,6 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="Polly.Core" />
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Serilog.AspNetCore" />
