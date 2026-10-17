@@ -1,0 +1,42 @@
+name: Notifications
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - backend/tests/Services/Notifications/**
+      - backend/src/Services/Notifications/**
+      - backend/src/BuildingBlocks/**
+      - backend/tests/Shared/**
+      - backend/tests/Directory.Build.props
+      - backend/*.props
+      - backend/global.json
+      - backend/nuget.config
+      - backend/stylecop.json
+      - backend/.editorconfig
+      - .github/workflows/_dotnet-service.yml
+      - .github/workflows/notifications.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_dotnet-service.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      name: Notifications
+      project-dirs: src/Services/Notifications tests/Services/Notifications
+      unit-tests: tests/Services/Notifications/Telemetry.Notifications.UnitTests
+      integration-tests: tests/Services/Notifications/Telemetry.Notifications.IntegrationTests
+      dockerfile: src/Services/Notifications/Telemetry.Notifications/Dockerfile
+      image: telemetry-notifications

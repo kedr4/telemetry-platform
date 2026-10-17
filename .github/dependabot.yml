@@ -1,0 +1,41 @@
+# Weekly dependency updates, grouped per ecosystem to keep the pull request count low.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      nuget:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      angular:
+        patterns: ["@angular/*", "@angular-devkit/*", "angular-eslint"]
+      npm:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories:
+      - /backend/src/Services/Ingestor/Telemetry.Ingestor
+      - /backend/src/Services/Processor/Telemetry.Processor
+      - /backend/src/Services/Gateway/Telemetry.Gateway.Api
+      - /backend/src/Services/Notifications/Telemetry.Notifications
+      - /frontend
+    schedule:
+      interval: weekly
+    groups:
+      docker:
+        patterns: ["*"]

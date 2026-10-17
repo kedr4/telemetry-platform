@@ -1,0 +1,42 @@
+name: Ingestor
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - backend/tests/Services/Ingestor/**
+      - backend/src/Services/Ingestor/**
+      - backend/src/BuildingBlocks/**
+      - backend/tests/Shared/**
+      - backend/tests/Directory.Build.props
+      - backend/*.props
+      - backend/global.json
+      - backend/nuget.config
+      - backend/stylecop.json
+      - backend/.editorconfig
+      - .github/workflows/_dotnet-service.yml
+      - .github/workflows/ingestor.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_dotnet-service.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      name: Ingestor
+      project-dirs: src/Services/Ingestor tests/Services/Ingestor
+      unit-tests: tests/Services/Ingestor/Telemetry.Ingestor.UnitTests
+      integration-tests: tests/Services/Ingestor/Telemetry.Ingestor.IntegrationTests
+      dockerfile: src/Services/Ingestor/Telemetry.Ingestor/Dockerfile
+      image: telemetry-ingestor

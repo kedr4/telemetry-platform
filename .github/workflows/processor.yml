@@ -1,0 +1,42 @@
+name: Processor
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - backend/tests/Services/Processor/**
+      - backend/src/Services/Processor/**
+      - backend/src/BuildingBlocks/**
+      - backend/tests/Shared/**
+      - backend/tests/Directory.Build.props
+      - backend/*.props
+      - backend/global.json
+      - backend/nuget.config
+      - backend/stylecop.json
+      - backend/.editorconfig
+      - .github/workflows/_dotnet-service.yml
+      - .github/workflows/processor.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_dotnet-service.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      name: Processor
+      project-dirs: src/Services/Processor tests/Services/Processor
+      unit-tests: tests/Services/Processor/Telemetry.Processor.UnitTests
+      integration-tests: tests/Services/Processor/Telemetry.Processor.IntegrationTests
+      dockerfile: src/Services/Processor/Telemetry.Processor/Dockerfile
+      image: telemetry-processor

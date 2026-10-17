@@ -110,6 +110,24 @@ dotnet test --solution Telemetry.slnx                    # unit + integration te
 dotnet format Telemetry.slnx --verify-no-changes         # style check
 ```
 
+## Continuous integration
+
+GitHub Actions runs one workflow per deployable component, each triggered only by changes to its own
+code or to the shared code and build settings it depends on.
+
+| Workflow | Runs on changes to | Steps |
+|---|---|---|
+| `ingestor.yml`, `processor.yml`, `gateway.yml`, `notifications.yml` | the service, its tests, building blocks, shared build settings | format check → Release build (warnings are errors) → unit tests → integration tests (Testcontainers) → Docker image |
+| `building-blocks.yml` | shared libraries and test helpers | format check → build → unit and integration tests |
+| `frontend.yml` | `frontend/`, the gateway's `schema.graphql` | `npm audit` (production deps) → generated GraphQL types up to date → Prettier → ESLint → Vitest → production build → Docker image |
+| `compose.yml` | `docker-compose.yml`, `.env.example` | `docker compose config` with defaults and with `.env.example` |
+
+The .NET services share `_dotnet-service.yml`, a reusable workflow parameterised by the service's projects
+and Dockerfile. Test results (TRX), Cobertura coverage and a Markdown summary are attached to every run.
+Images are built on every run and pushed to `ghcr.io/<owner>/telemetry-<service>` (tagged `sha-<commit>`
+and `latest`) only from `main`. Dependabot proposes weekly, grouped updates for NuGet, npm, Docker base
+images and the actions themselves.
+
 ## Repository layout
 
 | Path | Contents |
