@@ -1,0 +1,88 @@
+name: End-to-end
+
+# Builds and starts the whole platform with docker compose, then runs the Playwright suite against it.
+on:
+  push:
+    branches: [main]
+    paths-ignore: &docs
+      - "**/*.md"
+      - docs/**
+      - .github/dependabot.yml
+  pull_request:
+    paths-ignore: *docs
+  schedule:
+    # Nightly, to catch drift in the upstream API or base images even without code changes.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright against docker compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and start the platform
+        run: docker compose up --build --detach --wait --wait-timeout 600
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install test dependencies
+        working-directory: e2e
+        run: |
+          npm ci --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Type-check and format-check the tests
+        working-directory: e2e
+        run: |
+          npm run typecheck
+          npm run format:check
+
+      # Same checks as after a deployment; also waits until the first batches have been ingested.
+      - name: Smoke test
+        run: deploy/smoke-test.sh .env.example
+
+      - name: Run end-to-end tests
+        working-directory: e2e
+        run: npm test
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14
+
+      - name: Collect service logs
+        if: ${{ failure() }}
+        run: docker compose logs --no-color --timestamps > compose-logs.txt
+
+      - name: Upload service logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-logs
+          path: compose-logs.txt
+          retention-days: 14
+
+      - name: Stop the platform
+        if: ${{ always() }}
+        run: docker compose down --volumes
