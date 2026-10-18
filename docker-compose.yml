@@ -243,7 +243,8 @@ services:
 
 networks:
   backend:
-    name: telemetry-backend
+    # Per project, so several environments can run side by side on one Docker host.
+    name: ${COMPOSE_PROJECT_NAME:-telemetry}-backend
 
 volumes:
   rabbitmq-data:

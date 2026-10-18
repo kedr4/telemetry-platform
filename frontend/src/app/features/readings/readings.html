@@ -49,7 +49,8 @@
 </form>
 
 <app-panel heading="Stored readings" subheading="Newest first" [resource]="page">
-  <div class="table-container">
+  <!-- Focusable so keyboard users can scroll the table on narrow screens. -->
+  <div class="table-container" tabindex="0" role="region" aria-label="Readings table">
     <table mat-table [dataSource]="rows()" [trackBy]="trackRow">
       <ng-container matColumnDef="recordedAt">
         <th mat-header-cell *matHeaderCellDef>Time</th>

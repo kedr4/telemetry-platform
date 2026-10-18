@@ -1,0 +1,109 @@
+name: Deploy
+
+# Mock continuous deployment. After an image workflow succeeds on main, the latest images are deployed
+# to staging; production is deployed on demand (protect the 'production' GitHub environment with
+# required reviewers to add an approval gate).
+#
+# deploy/deploy.sh targets the Docker engine in DOCKER_HOST. Here that is the runner's own engine, so
+# the environment is torn down with the runner: a rehearsal of the real thing. Setting DOCKER_HOST to
+# ssh://user@server (with an SSH key from the environment's secrets) deploys to a real host instead.
+on:
+  workflow_run:
+    workflows: [Ingestor, Processor, Gateway, Notifications, Frontend]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+      version:
+        description: Image tag to deploy (latest or sha-<commit>)
+        type: string
+        default: latest
+
+# One deployment per environment at a time; later ones queue instead of cancelling a running rollout.
+concurrency:
+  group: deploy-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.version || 'latest' }} to ${{ inputs.environment || 'staging' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment || 'staging' }}
+    env:
+      TARGET_ENVIRONMENT: ${{ inputs.environment || 'staging' }}
+      VERSION: ${{ inputs.version || 'latest' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Deploy with the scripts and compose files of the commit whose images were built.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The last successfully deployed version per environment, so a failed rollout can roll back.
+      - name: Restore deployment state
+        uses: actions/cache/restore@v4
+        with:
+          path: .deploy
+          key: deploy-state-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
+          restore-keys: deploy-state-${{ env.TARGET_ENVIRONMENT }}-
+
+      - name: Deploy, smoke test and roll back on failure
+        env:
+          # Optional environment secrets; unset ones fall back to the compose defaults.
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          WEAKAPP_API_KEY: ${{ secrets.WEAKAPP_API_KEY }}
+        run: deploy/deploy.sh "$TARGET_ENVIRONMENT" "$VERSION"
+
+      - name: Save deployment state
+        if: ${{ success() }}
+        uses: actions/cache/save@v4
+        with:
+          path: .deploy
+          key: deploy-state-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
+
+      - name: Summary
+        if: ${{ always() }}
+        run: |
+          {
+            echo "### Deployment to \`$TARGET_ENVIRONMENT\`"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`$VERSION\` |"
+            echo "| Commit | \`${{ github.event.workflow_run.head_sha || github.sha }}\` |"
+            echo "| Triggered by | ${{ github.event.workflow_run.name || 'manual dispatch' }} |"
+            echo "| Result | ${{ job.status }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Collect service logs
+        if: ${{ failure() }}
+        run: >
+          docker compose --env-file "deploy/environments/$TARGET_ENVIRONMENT.env"
+          logs --no-color --timestamps > deploy-logs.txt
+
+      - name: Upload service logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-logs-${{ env.TARGET_ENVIRONMENT }}
+          path: deploy-logs.txt
+          retention-days: 14

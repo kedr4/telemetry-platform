@@ -4,8 +4,6 @@ A microservices system that reliably ingests data from an intentionally unstable
 ([WeakApp](https://github.com/nantonov/WeakApp)), distributes it through RabbitMQ, stores and aggregates it in
 PostgreSQL, and presents it in an Angular dashboard over GraphQL, REST and SignalR.
 
-> Work in progress — see [docs/implementation-plan.md](docs/implementation-plan.md) for the roadmap.
-
 `docker compose up --build -d` starts everything; open <http://localhost:4200> for the live dashboard.
 
 ## Quick start
@@ -150,7 +148,9 @@ code or to the shared code and build settings it depends on.
 | `building-blocks.yml` | shared libraries and test helpers | format check → build → unit and integration tests |
 | `frontend.yml` | `frontend/`, the gateway's `schema.graphql` | `npm audit` (production deps) → generated GraphQL types up to date → Prettier → ESLint → Vitest → production build → Docker image |
 | `observability.yml` | `infra/` | `promtool check config`, alert rule unit tests, dashboard JSON checks |
-| `compose.yml` | `docker-compose.yml`, `.env.example` | `docker compose config` with defaults and with `.env.example` |
+| `compose.yml` | `docker-compose.yml`, `.env.example`, `deploy/` | `docker compose config` with defaults, `.env.example` and every deploy environment; ShellCheck; deployment dry run |
+| `e2e.yml` | everything except docs; also nightly | `docker compose up --build --wait` → smoke test → Playwright suite (report, traces and service logs attached) |
+| `deploy.yml` | a successful image workflow on `main`, or manual dispatch | deploy to `staging` (automatic) or `production` (manual), smoke test, automatic rollback — see [Deployment](#deployment) |
 
 The .NET services share `_dotnet-service.yml`, a reusable workflow parameterised by the service's projects
 and Dockerfile. Test results (TRX), Cobertura coverage and a Markdown summary are attached to every run.
@@ -158,15 +158,53 @@ Images are built on every run and pushed to `ghcr.io/<owner>/telemetry-<service>
 and `latest`) only from `main`. Dependabot proposes weekly, grouped updates for NuGet, npm, Docker base
 images and the actions themselves.
 
+## End-to-end tests
+
+[e2e/](e2e/) holds a Playwright suite that runs against a running platform (32 tests):
+
+- **API**: REST polymorphism, cursor paging without overlap, filters, problem details; GraphQL fragments,
+  aggregations and per-field validation errors.
+- **Browser** (desktop Chrome and a Pixel 7 viewport): live status, a card per room, a batch arriving over
+  SignalR, charts, time-range switching, navigation, paging and filtering of readings, and axe checks for
+  serious WCAG 2.1 AA violations.
+- **Monitoring**: every Prometheus target up, readings visible in the pipeline metrics, alert rules loaded,
+  Grafana dashboards provisioned.
+
+```bash
+docker compose up --build --wait
+cd e2e && npm ci && npx playwright install chromium
+npm test                       # E2E_APP_URL, E2E_GATEWAY_URL, … point it at another environment
+```
+
+## Deployment
+
+`deploy/deploy.sh <environment> [version]` deploys the published images of one version (`latest` or
+`sha-<commit>`) and is what the `deploy.yml` workflow runs:
+
+1. pulls `ghcr.io/<owner>/telemetry-*:<version>` (overlay [deploy/compose.release.yml](deploy/compose.release.yml)),
+2. starts the environment as its own compose project, with its own network, volumes and ports
+   ([deploy/environments/](deploy/environments/)), and waits until every container is healthy,
+3. runs [deploy/smoke-test.sh](deploy/smoke-test.sh): readiness of every service, ingested data, GraphQL
+   directly and through the frontend proxy, SignalR negotiation,
+4. records the version — or, if anything failed, redeploys the last good version and exits non-zero.
+
+The script deploys to whatever Docker engine `DOCKER_HOST` points at. In GitHub Actions that is the
+runner itself, so the deployment is a full rehearsal that disappears with the runner (a mock); with
+`DOCKER_HOST=ssh://deploy@server` the same script deploys to a real host. `DEPLOY_DRY_RUN=1` prints the
+commands. Passwords and keys come from GitHub environment secrets, never from the environment files.
+
 ## Repository layout
 
 | Path | Contents |
 |---|---|
-| `backend/src/BuildingBlocks/` | Message contracts and shared infrastructure (logging, correlation, health, RabbitMQ) |
+| `backend/src/BuildingBlocks/` | Message contracts and shared infrastructure (logging, metrics, correlation, health, RabbitMQ) |
 | `backend/src/Services/` | One folder per microservice |
 | `backend/tests/` | Unit and integration tests, mirroring `src/` |
 | `frontend/` | Angular 22 dashboard (Material, Apollo GraphQL, SignalR, ECharts) — see [frontend/README.md](frontend/README.md) |
-| `infra/` | Infrastructure configuration (Prometheus, Grafana, …) |
+| `infra/` | Prometheus scrape config and tested alert rules; Grafana provisioning and dashboards |
+| `e2e/` | Playwright end-to-end tests of the running platform |
+| `deploy/` | Deployment script, smoke test, release overlay and per-environment settings |
+| `.github/` | CI/CD workflows and Dependabot configuration |
 | `docs/` | Architecture notes, implementation plan, API analysis |
 | `docker-compose.yml` | Runs the entire platform |
 
