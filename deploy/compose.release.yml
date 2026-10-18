@@ -1,0 +1,18 @@
+# Release overlay: run the published images of one version instead of building from source.
+# Used by deploy.sh together with ../docker-compose.yml. WeakApp (third-party) is still built from its repository.
+services:
+  ingestor:
+    image: ${REGISTRY:?}/telemetry-ingestor:${VERSION:?}
+    pull_policy: always
+  processor:
+    image: ${REGISTRY:?}/telemetry-processor:${VERSION:?}
+    pull_policy: always
+  gateway:
+    image: ${REGISTRY:?}/telemetry-gateway:${VERSION:?}
+    pull_policy: always
+  notifications:
+    image: ${REGISTRY:?}/telemetry-notifications:${VERSION:?}
+    pull_policy: always
+  frontend:
+    image: ${REGISTRY:?}/telemetry-frontend:${VERSION:?}
+    pull_policy: always
