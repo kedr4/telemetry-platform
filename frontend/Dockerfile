@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build context: frontend/
 
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 
 # Install dependencies first (cached until the lock file changes).
