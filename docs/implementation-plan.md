@@ -10,16 +10,17 @@ Source requirements: `D3S1.pdf`. API behaviour: [weakapp-analysis.md](weakapp-an
 | Message queue | RabbitMQ 4.1 |
 | Database | PostgreSQL 17, schema owned by the Processor (EF Core migrations) |
 | GraphQL | HotChocolate (Nitro playground) in the Gateway |
-| REST | Controllers + OpenAPI/Swagger in the Gateway, sharing CQRS handlers with GraphQL |
+| REST | Minimal APIs + OpenAPI/Swagger UI in the Gateway, sharing CQRS handlers with GraphQL |
 | Real time | SignalR hub in the Notification service |
-| Frontend | Angular (standalone + signals), Apollo Angular, Angular Material, ngx-echarts, `@microsoft/signalr` |
+| Frontend | Angular (standalone, zoneless, signals), Apollo Angular, Angular Material, Apache ECharts (thin wrapper), `@microsoft/signalr` |
 | Resilience | Polly v8 resilience pipeline in the Ingestor |
 | Validation | FluentValidation |
 | Logging | Serilog (structured JSON, correlation id) |
 | Metrics | OpenTelemetry → Prometheus → Grafana |
-| Tests | xUnit, NSubstitute, Shouldly, WireMock.Net, Testcontainers; Vitest for Angular; Playwright E2E |
+| Tests | xUnit, NSubstitute, Shouldly, WireMock.Net, Testcontainers; Vitest for Angular; Playwright + axe E2E |
 | Quality | Warnings as errors, StyleCop, SonarAnalyzer, `dotnet format`, ESLint, Prettier |
 | Git | `main` + `feature/*`, each batch merged with `--no-ff` |
+| Deployment | `deploy/deploy.sh`: published images per environment, smoke test, automatic rollback |
 
 ## Architecture
 
@@ -74,6 +75,8 @@ docs/                      documentation
 ```
 
 ## Batches
+
+All ten batches are complete.
 
 | # | Branch | Scope |
 |---|---|---|
