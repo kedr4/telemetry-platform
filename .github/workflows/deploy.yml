@@ -44,13 +44,13 @@ jobs:
       TARGET_ENVIRONMENT: ${{ inputs.environment || 'staging' }}
       VERSION: ${{ inputs.version || 'latest' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # Deploy with the scripts and compose files of the commit whose images were built.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -58,7 +58,7 @@ jobs:
 
       # The last successfully deployed version per environment, so a failed rollout can roll back.
       - name: Restore deployment state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .deploy
           key: deploy-state-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
@@ -75,7 +75,7 @@ jobs:
 
       - name: Save deployment state
         if: ${{ success() }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .deploy
           key: deploy-state-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload service logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: deploy-logs-${{ env.TARGET_ENVIRONMENT }}
           path: deploy-logs.txt
