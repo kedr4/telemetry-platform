@@ -6,6 +6,7 @@ on:
     paths: &paths
       - docker-compose.yml
       - .env.example
+      - deploy/**
       - .github/workflows/compose.yml
   pull_request:
     paths: *paths
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate docker-compose.yml
+    name: Validate compose files and deploy scripts
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,3 +28,22 @@ jobs:
 
       - name: Validate with .env.example
         run: docker compose --env-file .env.example config --quiet
+
+      - name: Validate release overlay per environment
+        env:
+          REGISTRY: ghcr.io/example
+          VERSION: latest
+        run: |
+          for environment in deploy/environments/*.env; do
+            echo "Checking $environment"
+            docker compose --env-file "$environment" -f docker-compose.yml -f deploy/compose.release.yml config --quiet
+          done
+
+      - name: ShellCheck deploy scripts
+        run: shellcheck deploy/*.sh
+
+      - name: Dry-run a deployment
+        env:
+          DEPLOY_DRY_RUN: "1"
+          REGISTRY: ghcr.io/example
+        run: deploy/deploy.sh staging sha-0000000
