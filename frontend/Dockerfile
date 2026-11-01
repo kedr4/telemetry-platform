@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build context: frontend/
 
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 
 # Install dependencies first (cached until the lock file changes).
@@ -11,7 +11,7 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
-FROM nginx:1.29-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/telemetry-dashboard/browser /usr/share/nginx/html
 
